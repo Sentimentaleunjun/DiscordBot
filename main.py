@@ -1,5 +1,6 @@
 import discord
 from discord import app_commands
+import os
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -45,47 +46,38 @@ async def accordingtobot(interaction: discord.Interaction, message: str):
     await channel.send(f"📢 서버 공지사항: {message}")
     await interaction.response.send_message(f"✅ 공지가 {channel.mention} 채널에 전송되었습니다.", ephemeral=True)
 
+async def welcome_member(member):
+    channel = discord.utils.get(member.guild.text_channels, name="환영합니다")
+    role = discord.utils.get(member.guild.roles, name="회원")
+    if channel:
+        await channel.send(f"🎉 환영합니다 {member.mention}님! 서버에 오신 걸 환영해요 👋")
+    if role and not (member.bot or member.guild_permissions.administrator):
+        try:
+            await member.add_roles(role)
+        except discord.Forbidden:
+            print(f"⚠️ {member}에게 역할을 부여할 권한이 없습니다.")
+    client.welcomed_members.add(member.id)
+
 @client.event
 async def on_ready():
     if not client.synced:
         await client.tree.sync()
         client.synced = True
     print(f"✅ 봇 로그인 완료: {client.user} (ID: {client.user.id})")
-
     for guild in client.guilds:
-        channel = discord.utils.get(guild.text_channels, name="환영합니다")
-        role = discord.utils.get(guild.roles, name="회원")
         for member in guild.members:
             if not member.bot and member.status != discord.Status.offline:
                 if member.id not in client.welcomed_members:
-                    if channel:
-                        await channel.send(f"🎉 환영합니다 {member.mention}님! 서버에 오신 걸 환영해요 👋")
-                    if role:
-                        await member.add_roles(role)
-                    client.welcomed_members.add(member.id)
+                    await welcome_member(member)
 
 @client.event
 async def on_member_join(member):
-    channel = discord.utils.get(member.guild.text_channels, name="환영합니다")
-    role = discord.utils.get(member.guild.roles, name="회원")
-    if not member.bot:
-        if channel:
-            await channel.send(f"🎉 환영합니다 {member.mention}님! 서버에 오신 걸 환영해요 👋")
-        if role:
-            await member.add_roles(role)
-        client.welcomed_members.add(member.id)
+    await welcome_member(member)
 
 @client.event
 async def on_presence_update(before, after):
     if after.status != discord.Status.offline and after.id not in client.welcomed_members:
-        channel = discord.utils.get(after.guild.text_channels, name="환영합니다")
-        role = discord.utils.get(after.guild.roles, name="회원")
-        if not after.bot:
-            if channel:
-                await channel.send(f"🎉 환영합니다 {after.mention}님! 서버에 오신 걸 환영해요 👋")
-            if role:
-                await after.add_roles(role)
-            client.welcomed_members.add(after.id)
+        await welcome_member(after)
 
-client.run("MTQxMTY1Nzg4Mjg3NjkwNzU0MA.Gm-7Cz.c3dbHGFn2ACrFR3Rrh35-j2uddpqhtxaTbFF9c")
+client.run(os.environ["MTQxMTY1Nzg4Mjg3NjkwNzU0MA.GWmV2u.zColsle-Iy5aJFeaz8nQ9ZI8TzvTy-pnZmIouQ"])
 
