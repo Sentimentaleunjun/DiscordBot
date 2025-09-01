@@ -1,24 +1,15 @@
-import os
 import discord
 from discord import app_commands
 from flask import Flask
-import threading
+import os
 
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "봇이 켜져 있습니다! ✅"
-
-def run_flask():
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-
+# Discord Intents 설정
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.presences = True
 
+# Discord 클라이언트 클래스
 class MyClient(discord.Client):
     def __init__(self):
         super().__init__(intents=intents)
@@ -28,6 +19,7 @@ class MyClient(discord.Client):
 
 client = MyClient()
 
+# /help 커맨드
 @client.tree.command(name="help", description="따까리 봇 도움말")
 async def help(interaction: discord.Interaction):
     embed = discord.Embed(
@@ -36,13 +28,16 @@ async def help(interaction: discord.Interaction):
         color=discord.Color.blue()
     )
     embed.add_field(name="✅ `/help`", value="따까리봇 도움말을 확인합니다", inline=False)
-    embed.add_field(name="✅ `/accordingtobot [message]`", value="서버에 공지를 전송합니다 (관리자 전용)", inline=False)
+    embed.add_field(name="✅ `/accordingtobot [message]`", value="서버에 공지를 전송합니다 (관리자 전용), 반드시 '공지' 채널에서만 작동", inline=False)
     embed.set_thumbnail(url=interaction.client.user.display_avatar.url)
     embed.set_footer(text="앞으로 더 많은 기능이 추가될 예정이에요 🚀")
+
     view = discord.ui.View()
     view.add_item(discord.ui.Button(label="🌐 공식 웹사이트", url="https://gsej-company.onrender.com"))
+
     await interaction.response.send_message(embed=embed, view=view)
 
+# /accordingtobot 커맨드
 @client.tree.command(name="accordingtobot", description="서버에 공지를 전송합니다 (관리자 전용)")
 @app_commands.describe(message="전송할 공지 내용을 입력하세요")
 async def accordingtobot(interaction: discord.Interaction, message: str):
@@ -56,6 +51,7 @@ async def accordingtobot(interaction: discord.Interaction, message: str):
     await channel.send(f"📢 서버 공지사항: {message}")
     await interaction.response.send_message(f"✅ 공지가 {channel.mention} 채널에 전송되었습니다.", ephemeral=True)
 
+# 신규 멤버 환영 함수
 async def welcome_member(member):
     channel = discord.utils.get(member.guild.text_channels, name="환영합니다")
     role = discord.utils.get(member.guild.roles, name="회원")
@@ -68,6 +64,7 @@ async def welcome_member(member):
             print(f"⚠️ {member}에게 역할을 부여할 권한이 없습니다.")
     client.welcomed_members.add(member.id)
 
+# 이벤트: 봇 준비 완료
 @client.event
 async def on_ready():
     if not client.synced:
@@ -80,17 +77,32 @@ async def on_ready():
                 if member.id not in client.welcomed_members:
                     await welcome_member(member)
 
+# 이벤트: 멤버 입장
 @client.event
 async def on_member_join(member):
     await welcome_member(member)
 
+# 이벤트: 상태 업데이트
 @client.event
 async def on_presence_update(before, after):
     if after.status != discord.Status.offline and after.id not in client.welcomed_members:
         await welcome_member(after)
 
-if __name__ == "__main__":
-    threading.Thread(target=run_flask).start()
-    client.run(os.environ["DISCORD_TOKEN"])
+# Flask 서버
+app = Flask("")
 
+@app.route("/")
+def home():
+    return "봇이 살아있습니다 ✅"
 
+# Discord와 Flask 동시에 실행
+import threading
+
+def run_flask():
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+
+flask_thread = threading.Thread(target=run_flask)
+flask_thread.start()
+
+# Discord 봇 실행
+client.run(os.environ["DISCORD_TOKEN"])
