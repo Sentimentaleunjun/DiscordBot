@@ -1,23 +1,10 @@
 import discord
 from discord import app_commands
-import os
 from flask import Flask
-from threading import Thread
+import os
+import threading
 
-# ================== Flask 웹 서버 ==================
-app = Flask("")
-
-@app.route("/")
-def home():
-    return "따까리봇이 정상적으로 실행 중입니다! 🚀"
-
-def run_web():
-    app.run(host="0.0.0.0", port=8080)
-
-# 웹 서버를 별도 쓰레드로 실행
-Thread(target=run_web).start()
-
-# ================== Discord 봇 ==================
+# ----------------- Discord 봇 세팅 -----------------
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
@@ -32,71 +19,51 @@ class MyClient(discord.Client):
 
 client = MyClient()
 
-# ---- 봇 명령어 ----
-@client.tree.command(name="help", description="따까리봇 도움말")
+@client.tree.command(name="help", description="따까리 봇 도움말")
 async def help(interaction: discord.Interaction):
     embed = discord.Embed(
         title="📌 따까리봇 도움말",
-        description="안녕하세요! **여러분들의 디스코드를 더욱 편리하게 바꿔줄 잡일해결봇 따까리봇 입니다**.\n\n",
+        description="안녕하세요! 따까리봇입니다.",
         color=discord.Color.blue()
     )
-    embed.add_field(name="✅ `/help`", value="따까리봇 도움말을 확인합니다", inline=False)
-    embed.add_field(name="✅ `/accordingtobot [message]`", value="서버에 공지를 전송합니다 (관리자 전용), 반드시 '공지' 채널에서만 작동", inline=False)
-    embed.set_thumbnail(url=interaction.client.user.display_avatar.url)
-    embed.set_footer(text="앞으로 더 많은 기능이 추가될 예정이에요 🚀")
+    embed.add_field(name="✅ `/help`", value="도움말 확인", inline=False)
+    await interaction.response.send_message(embed=embed)
 
-    view = discord.ui.View()
-    view.add_item(discord.ui.Button(label="🌐 공식 웹사이트", url="https://gsej-company.onrender.com"))
-
-    await interaction.response.send_message(embed=embed, view=view)
-
-@client.tree.command(name="accordingtobot", description="서버에 공지를 전송합니다 (관리자 전용)")
-@app_commands.describe(message="전송할 공지 내용을 입력하세요")
-async def accordingtobot(interaction: discord.Interaction, message: str):
-    if not interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message("❌ 관리자만 사용할 수 있습니다.", ephemeral=True)
-        return
-    channel = discord.utils.get(interaction.guild.text_channels, name="공지")
-    if channel is None:
-        await interaction.response.send_message("❌ 공지 채널을 찾을 수 없습니다.", ephemeral=True)
-        return
-    await channel.send(f"📢 서버 공지사항: {message}")
-    await interaction.response.send_message(f"✅ 공지가 {channel.mention} 채널에 전송되었습니다.", ephemeral=True)
-
-# ---- 환영 멤버 이벤트 ----
 async def welcome_member(member):
     channel = discord.utils.get(member.guild.text_channels, name="환영합니다")
     role = discord.utils.get(member.guild.roles, name="회원")
     if channel:
-        await channel.send(f"🎉 환영합니다 {member.mention}님! 서버에 오신 걸 환영해요 👋")
+        await channel.send(f"🎉 환영합니다 {member.mention}님!")
     if role and not (member.bot or member.guild_permissions.administrator):
         try:
             await member.add_roles(role)
         except discord.Forbidden:
-            print(f"⚠️ {member}에게 역할을 부여할 권한이 없습니다.")
+            print(f"⚠️ {member}에게 역할 부여 불가.")
     client.welcomed_members.add(member.id)
 
-# ---- 봇 이벤트 ----
 @client.event
 async def on_ready():
     if not client.synced:
         await client.tree.sync()
         client.synced = True
     print(f"✅ 봇 로그인 완료: {client.user} (ID: {client.user.id})")
-    for guild in client.guilds:
-        for member in guild.members:
-            if not member.bot and member.status != discord.Status.offline:
-                if member.id not in client.welcomed_members:
-                    await welcome_member(member)
 
 @client.event
 async def on_member_join(member):
     await welcome_member(member)
 
-@client.event
-async def on_presence_update(before, after):
-    if after.status != discord.Status.offline and after.id not in client.welcomed_members:
-        await welcome_member(after)
+# ----------------- Flask 웹 서버 -----------------
+app = Flask(__name__)
 
-# ================== 봇 실행 ==================
-client.run(os.environ["DISCORD_TOKEN"])
+@app.route("/")
+def index():
+    return "따까리봇 웹 서버가 실행 중입니다!"
+
+def run_flask():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
+
+# ----------------- 멀티 스레드 실행 -----------------
+if __name__ == "__main__":
+    threading.Thread(target=run_flask).start()
+    client.run(os.environ["DISCORD_TOKEN"])
