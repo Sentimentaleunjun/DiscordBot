@@ -79,5 +79,5 @@ async def on_presence_update(before, after):
     if after.status != discord.Status.offline and after.id not in client.welcomed_members:
         await welcome_member(after)
 
-client.run(os.environ["MTQxMTY1Nzg4Mjg3NjkwNzU0MA.Gdo_Mz.PM_XmS9gOYRxFIRPgtyS2asqcQlKZz17AP8dTs"])
+client.run(os.environ["DISCORD_TOKEN"])
 
