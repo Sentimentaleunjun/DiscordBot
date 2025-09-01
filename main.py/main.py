@@ -1,6 +1,19 @@
 import discord
 from discord import app_commands
+from discord.ext import commands
 import os
+from flask import Flask
+
+
+app = Flask("")
+
+@app.route("/")
+def home():
+    return "GSEJ Company 따까리봇이 정상 작동 중입니다."
+
+def run():
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -79,5 +92,9 @@ async def on_presence_update(before, after):
     if after.status != discord.Status.offline and after.id not in client.welcomed_members:
         await welcome_member(after)
 
-client.run(os.environ["DISCORD_TOKEN"])
+if __name__ == "__main__":
+    import threading
+    t = threading.Thread(target=run)
+    t.start()
+    client.run(os.environ["DISCORD_TOKEN"])
 
