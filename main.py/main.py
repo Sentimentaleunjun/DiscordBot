@@ -1,15 +1,28 @@
 import discord
 from discord import app_commands
-from flask import Flask
 import os
+from flask import Flask
+from threading import Thread
 
-# Discord Intents 설정
+# ================== Flask 웹 서버 ==================
+app = Flask("")
+
+@app.route("/")
+def home():
+    return "따까리봇이 정상적으로 실행 중입니다! 🚀"
+
+def run_web():
+    app.run(host="0.0.0.0", port=8080)
+
+# 웹 서버를 별도 쓰레드로 실행
+Thread(target=run_web).start()
+
+# ================== Discord 봇 ==================
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.presences = True
 
-# Discord 클라이언트 클래스
 class MyClient(discord.Client):
     def __init__(self):
         super().__init__(intents=intents)
@@ -19,8 +32,8 @@ class MyClient(discord.Client):
 
 client = MyClient()
 
-# /help 커맨드
-@client.tree.command(name="help", description="따까리 봇 도움말")
+# ---- 봇 명령어 ----
+@client.tree.command(name="help", description="따까리봇 도움말")
 async def help(interaction: discord.Interaction):
     embed = discord.Embed(
         title="📌 따까리봇 도움말",
@@ -37,7 +50,6 @@ async def help(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed, view=view)
 
-# /accordingtobot 커맨드
 @client.tree.command(name="accordingtobot", description="서버에 공지를 전송합니다 (관리자 전용)")
 @app_commands.describe(message="전송할 공지 내용을 입력하세요")
 async def accordingtobot(interaction: discord.Interaction, message: str):
@@ -51,7 +63,7 @@ async def accordingtobot(interaction: discord.Interaction, message: str):
     await channel.send(f"📢 서버 공지사항: {message}")
     await interaction.response.send_message(f"✅ 공지가 {channel.mention} 채널에 전송되었습니다.", ephemeral=True)
 
-# 신규 멤버 환영 함수
+# ---- 환영 멤버 이벤트 ----
 async def welcome_member(member):
     channel = discord.utils.get(member.guild.text_channels, name="환영합니다")
     role = discord.utils.get(member.guild.roles, name="회원")
@@ -64,7 +76,7 @@ async def welcome_member(member):
             print(f"⚠️ {member}에게 역할을 부여할 권한이 없습니다.")
     client.welcomed_members.add(member.id)
 
-# 이벤트: 봇 준비 완료
+# ---- 봇 이벤트 ----
 @client.event
 async def on_ready():
     if not client.synced:
@@ -77,32 +89,14 @@ async def on_ready():
                 if member.id not in client.welcomed_members:
                     await welcome_member(member)
 
-# 이벤트: 멤버 입장
 @client.event
 async def on_member_join(member):
     await welcome_member(member)
 
-# 이벤트: 상태 업데이트
 @client.event
 async def on_presence_update(before, after):
     if after.status != discord.Status.offline and after.id not in client.welcomed_members:
         await welcome_member(after)
 
-# Flask 서버
-app = Flask("")
-
-@app.route("/")
-def home():
-    return "봇이 살아있습니다 ✅"
-
-# Discord와 Flask 동시에 실행
-import threading
-
-def run_flask():
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
-
-flask_thread = threading.Thread(target=run_flask)
-flask_thread.start()
-
-# Discord 봇 실행
+# ================== 봇 실행 ==================
 client.run(os.environ["DISCORD_TOKEN"])
