@@ -1,19 +1,18 @@
+import os
 import discord
 from discord import app_commands
-from discord.ext import commands
-import os
 from flask import Flask
+import threading
 
-
-app = Flask("")
+app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "GSEJ Company 따까리봇이 정상 작동 중입니다."
+    return "봇이 켜져 있습니다! ✅"
 
-def run():
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
-
+def run_flask():
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -37,13 +36,11 @@ async def help(interaction: discord.Interaction):
         color=discord.Color.blue()
     )
     embed.add_field(name="✅ `/help`", value="따까리봇 도움말을 확인합니다", inline=False)
-    embed.add_field(name="✅ `/accordingtobot [message]`", value="서버에 공지를 전송합니다 (관리자 전용), 반드시 '공지' 채널에서만 작동", inline=False)
+    embed.add_field(name="✅ `/accordingtobot [message]`", value="서버에 공지를 전송합니다 (관리자 전용)", inline=False)
     embed.set_thumbnail(url=interaction.client.user.display_avatar.url)
     embed.set_footer(text="앞으로 더 많은 기능이 추가될 예정이에요 🚀")
-
     view = discord.ui.View()
     view.add_item(discord.ui.Button(label="🌐 공식 웹사이트", url="https://gsej-company.onrender.com"))
-
     await interaction.response.send_message(embed=embed, view=view)
 
 @client.tree.command(name="accordingtobot", description="서버에 공지를 전송합니다 (관리자 전용)")
@@ -93,8 +90,7 @@ async def on_presence_update(before, after):
         await welcome_member(after)
 
 if __name__ == "__main__":
-    import threading
-    t = threading.Thread(target=run)
-    t.start()
+    threading.Thread(target=run_flask).start()
     client.run(os.environ["DISCORD_TOKEN"])
+
 
