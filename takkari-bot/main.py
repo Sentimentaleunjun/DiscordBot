@@ -30,8 +30,7 @@ async def help(interaction: discord.Interaction):
     embed.add_field(name="✅ `/help`", value="따까리봇 도움말을 확인합니다", inline=False)
     embed.add_field(name="✅ `/accordingtobot [message]`", value="서버에 공지를 전송합니다 (관리자 전용), 반드시 '공지' 채널에서만 작동", inline=False)
     embed.set_thumbnail(url=interaction.client.user.display_avatar.url)
-    embed.set_footer(text="앞으로 더 많은 기능이 추가될 예정이에요 🚀")
-    embed.set_footer(text="Edited by GSEJ Company , This is Beta Test Version")
+    embed.set_footer(text="앞으로 더 많은 기능이 추가됩니다 🚀 | Edited by GSEJ Company . This is beta version")
 
     view = discord.ui.View()
     view.add_item(discord.ui.Button(label="🌐 공식 웹사이트", url="https://gsej-company.onrender.com"))
