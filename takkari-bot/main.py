@@ -23,16 +23,18 @@ class MyClient(discord.Client):
 
 client = MyClient()
 
+# ===== 추가: 상태 메시지 변경 =====
 status_messages = cycle([
-    "채팅로그 기록 관리중🔧",
+    "당신의 더 나은 라이프스타일을 만들기 위해 노력중",
     "서버 관리 중 🔧",
-    "GSEJ Company:Beta v0.5"
+    "GSEJ Company Beta v0.5"
 ])
 
 @tasks.loop(seconds=60)
 async def change_status():
-    await client.change_presence(activity=discord.Game(next(status_messages)))
+    await client.change_presence(activity=discord.CustomActivity(next(status_messages)))
 # =================================
+
 
 @client.tree.command(name="help", description="따까리 봇 도움말")
 async def help(interaction: discord.Interaction):
