@@ -1,163 +1,136 @@
 import discord
 from discord import app_commands
-from flask import Flask
-import os
-import threading
-import logging
 import sqlite3
-from datetime import datetime
-
-OWNER_ID = 909360134566862878
-LOG_FILE = "bot.log"
-DB_FILE = "bot.db"
-
-logging.basicConfig(
-    filename=LOG_FILE,
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    encoding="utf-8"
-)
-
-conn = sqlite3.connect(DB_FILE)
-c = conn.cursor()
-c.execute("""CREATE TABLE IF NOT EXISTS command_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                command TEXT,
-                timestamp TEXT
-            )""")
-conn.commit()
-conn.close()
+import os, sys
 
 intents = discord.Intents.default()
-intents.message_content = True
 intents.members = True
-intents.presences = True
+client = discord.Client(intents=intents)
+tree = app_commands.CommandTree(client)
 
-class MyClient(discord.Client):
-    def __init__(self):
-        super().__init__(intents=intents)
-        self.tree = app_commands.CommandTree(self)
-        self.synced = False
+db = sqlite3.connect("bot.db")
+cursor = db.cursor()
 
-client = MyClient()
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user TEXT,
+    action TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+""")
 
-def log_command(user_id, command):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("INSERT INTO command_logs (user_id, command, timestamp) VALUES (?, ?, ?)",
-              (user_id, command, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")))
-    conn.commit()
-    conn.close()
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT,
+    data TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+""")
 
-@client.tree.command(name="help", description="따까리 봇 도움말")
-async def help_command(interaction: discord.Interaction):
-    embed = discord.Embed(
-        title="📌 따까리봇 도움말",
-        description="여러분의 디스코드를 편리하게! 따까리봇 입니다.\n",
-        color=discord.Color.blue()
-    )
-    embed.add_field(name="✅ `/help`", value="따까리봇 도움말", inline=False)
-    embed.add_field(name="✅ `/accordingtobot`", value="공지 전송 (관리자)", inline=False)
-    embed.add_field(name="✅ `/ping`", value="핑 속도", inline=False)
-    embed.add_field(name="✅ `/restart`", value="봇 재시작 (봇주인)", inline=False)
-    embed.add_field(name="✅ `/serverinfo`", value="서버 정보", inline=False)
-    embed.add_field(name="✅ `/userinfo`", value="유저 정보", inline=False)
-    embed.add_field(name="✅ `/dblookup`", value="DB 로그 조회 (봇주인)", inline=False)
-    embed.set_thumbnail(url=interaction.client.user.display_avatar.url)
-    view = discord.ui.View()
-    view.add_item(discord.ui.Button(label="🌐 공식 웹사이트", url="https://gsej-company.onrender.com"))
-    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
-    log_command(interaction.user.id, "/help")
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS api_keys (
+    guild_id TEXT,
+    service TEXT,
+    key TEXT,
+    PRIMARY KEY (guild_id, service)
+)
+""")
 
-@client.tree.command(name="accordingtobot", description="서버에 공지 전송 (관리자)")
-@app_commands.describe(message="전송할 공지")
-async def accordingtobot(interaction: discord.Interaction, message: str):
-    if not interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message("❌ 관리자만 가능", ephemeral=True)
-        return
-    channel = discord.utils.get(interaction.guild.text_channels, name="공지")
-    if channel is None:
-        await interaction.response.send_message("❌ 공지 채널 없음", ephemeral=True)
-        return
-    await channel.send(f"📢 서버 공지사항: {message}")
-    await interaction.response.send_message(f"✅ 공지 완료: {channel.mention}", ephemeral=True)
-    log_command(interaction.user.id, f"/accordingtobot {message}")
+db.commit()
 
-@client.tree.command(name="ping", description="핑 속도 확인")
-async def ping_command(interaction: discord.Interaction):
-    latency = round(client.latency * 1000)
-    await interaction.response.send_message(f"🏓 {latency}ms")
-    log_command(interaction.user.id, "/ping")
+def is_server_admin(interaction: discord.Interaction):
+    return interaction.user.guild_permissions.administrator
 
-@client.tree.command(name="restart", description="봇 재시작 (봇주인)")
-async def restart_command(interaction: discord.Interaction):
-    if interaction.user.id != OWNER_ID:
-        await interaction.response.send_message("❌ 봇 주인만 가능", ephemeral=True)
-        return
-    await interaction.response.send_message("♻️ 봇 재시작 중...", ephemeral=True)
-    log_command(interaction.user.id, "/restart")
-    await client.close()
-
-@client.tree.command(name="serverinfo", description="서버 정보 확인")
-async def serverinfo(interaction: discord.Interaction):
-    guild = interaction.guild
-    embed = discord.Embed(title=f"서버 정보 - {guild.name}", color=discord.Color.green())
-    embed.add_field(name="서버 ID", value=guild.id, inline=False)
-    embed.add_field(name="멤버 수", value=guild.member_count, inline=False)
-    embed.add_field(name="생성일", value=guild.created_at.strftime("%Y-%m-%d %H:%M:%S"), inline=False)
-    embed.set_thumbnail(url=guild.icon.url if guild.icon else interaction.client.user.display_avatar.url)
-    await interaction.response.send_message(embed=embed)
-    log_command(interaction.user.id, "/serverinfo")
-
-@client.tree.command(name="userinfo", description="유저 정보 확인")
-@app_commands.describe(member="조회할 유저")
-async def userinfo(interaction: discord.Interaction, member: discord.Member):
-    embed = discord.Embed(title=f"유저 정보 - {member.display_name}", color=discord.Color.orange())
-    embed.add_field(name="유저 ID", value=member.id, inline=False)
-    embed.add_field(name="계정 생성일", value=member.created_at.strftime("%Y-%m-%d %H:%M:%S"), inline=False)
-    embed.add_field(name="서버 가입일", value=member.joined_at.strftime("%Y-%m-%d %H:%M:%S"), inline=False)
-    embed.set_thumbnail(url=member.display_avatar.url)
-    await interaction.response.send_message(embed=embed)
-    log_command(interaction.user.id, f"/userinfo {member.id}")
-
-@client.tree.command(name="dblookup", description="DB 로그 조회 (봇주인)")
-@app_commands.describe(limit="가져올 로그 개수 (기본 10)")
-async def dblookup(interaction: discord.Interaction, limit: int = 10):
-    if interaction.user.id != OWNER_ID:
-        await interaction.response.send_message("❌ 봇 주인만 가능", ephemeral=True)
-        return
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("SELECT user_id, command, timestamp FROM command_logs ORDER BY id DESC LIMIT ?", (limit,))
-    rows = c.fetchall()
-    conn.close()
-    if not rows:
-        await interaction.response.send_message("📂 저장된 로그가 없습니다.", ephemeral=True)
-        return
-    msg = "\n".join([f"👤 {r[0]} | {r[1]} | {r[2]}" for r in rows])
-    await interaction.response.send_message(f"**최근 {len(rows)}개의 로그**\n{msg}", ephemeral=True)
-    log_command(interaction.user.id, f"/dblookup {limit}")
-
-app = Flask(__name__)
-
-@app.route("/")
-def index():
-    return "Bot is running"
-
-def run_flask():
-    app.run(host="0.0.0.0", port=8080)
-
-def start_flask():
-    thread = threading.Thread(target=run_flask)
-    thread.start()
+def get_api_key(guild_id: int, service: str):
+    cursor.execute("SELECT key FROM api_keys WHERE guild_id = ? AND service = ?", (str(guild_id), service))
+    row = cursor.fetchone()
+    return row[0] if row else None
 
 @client.event
 async def on_ready():
-    if not client.synced:
-        await client.tree.sync()
-        client.synced = True
-    print(f"Logged in as {client.user}")
+    await tree.sync()
+    print(f"봇 로그인 완료: {client.user}")
 
-start_flask()
+@tree.command(name="ping", description="핑 확인")
+async def ping(interaction: discord.Interaction):
+    await interaction.response.send_message(f"🏓 퐁! {round(client.latency * 1000)}ms")
+
+@tree.command(name="restart", description="봇 재시작 (개발자 전용)")
+async def restart(interaction: discord.Interaction):
+    if interaction.user.id != 909360134566862878:
+        await interaction.response.send_message("❌ 이 명령어는 봇 개발자만 사용할 수 있습니다.", ephemeral=True)
+        return
+    await interaction.response.send_message("♻️ 봇이 재시작됩니다.", ephemeral=True)
+    cursor.execute("INSERT INTO logs(user, action) VALUES(?, ?)", (interaction.user.name, "봇 재시작"))
+    db.commit()
+    os.execv(sys.executable, ['python'] + sys.argv)
+
+@tree.command(name="serverinfo", description="서버 정보를 확인합니다")
+async def serverinfo(interaction: discord.Interaction):
+    guild = interaction.guild
+    embed = discord.Embed(title="서버 정보", color=discord.Color.blue())
+    embed.add_field(name="서버 이름", value=guild.name, inline=False)
+    embed.add_field(name="서버 ID", value=guild.id, inline=False)
+    embed.add_field(name="멤버 수", value=guild.member_count, inline=False)
+    await interaction.response.send_message(embed=embed)
+
+@tree.command(name="userlookup", description="유저 정보를 조회 (관리자 전용)")
+async def userlookup(interaction: discord.Interaction, user: discord.User):
+    if not is_server_admin(interaction):
+        await interaction.response.send_message("❌ 이 명령어는 서버 관리자만 사용할 수 있습니다.", ephemeral=True)
+        return
+    embed = discord.Embed(title="유저 정보", color=discord.Color.green())
+    embed.add_field(name="이름", value=user.name, inline=False)
+    embed.add_field(name="ID", value=user.id, inline=False)
+    embed.add_field(name="봇 여부", value=user.bot, inline=False)
+    await interaction.response.send_message(embed=embed)
+
+@tree.command(name="loglookup", description="로그를 확인 (관리자 전용)")
+async def loglookup(interaction: discord.Interaction, limit: int = 10):
+    if not is_server_admin(interaction):
+        await interaction.response.send_message("❌ 이 명령어는 서버 관리자만 사용할 수 있습니다.", ephemeral=True)
+        return
+    cursor.execute("SELECT user, action, timestamp FROM logs ORDER BY id DESC LIMIT ?", (limit,))
+    rows = cursor.fetchall()
+    if not rows:
+        await interaction.response.send_message("📂 로그가 없습니다.", ephemeral=True)
+        return
+    log_text = "\n".join([f"[{r[2]}] {r[0]}: {r[1]}" for r in rows])
+    await interaction.response.send_message(f"**최근 {limit}개의 로그**\n{log_text}")
+
+@tree.command(name="dblookup", description="DB 데이터를 조회 (관리자 전용)")
+async def dblookup(interaction: discord.Interaction):
+    if not is_server_admin(interaction):
+        await interaction.response.send_message("❌ 이 명령어는 서버 관리자만 사용할 수 있습니다.", ephemeral=True)
+        return
+    cursor.execute("SELECT username, data, timestamp FROM users ORDER BY id DESC LIMIT 10")
+    rows = cursor.fetchall()
+    if not rows:
+        await interaction.response.send_message("📂 DB에 저장된 데이터가 없습니다.", ephemeral=True)
+        return
+    db_text = "\n".join([f"[{r[2]}] {r[0]}: {r[1]}" for r in rows])
+    await interaction.response.send_message(f"**최근 데이터**\n{db_text}")
+
+@tree.command(name="setkey", description="API 키를 설정 (관리자 전용)")
+async def setkey(interaction: discord.Interaction, service: str, key: str):
+    if not is_server_admin(interaction):
+        await interaction.response.send_message("❌ 이 명령어는 서버 관리자만 사용할 수 있습니다.", ephemeral=True)
+        return
+    cursor.execute("INSERT OR REPLACE INTO api_keys(guild_id, service, key) VALUES(?, ?, ?)", (str(interaction.guild_id), service, key))
+    db.commit()
+    await interaction.response.send_message(f"🔑 `{service}` API 키가 저장되었습니다.", ephemeral=True)
+
+@tree.command(name="getkey", description="저장된 API 키 확인 (관리자 전용)")
+async def getkey(interaction: discord.Interaction, service: str):
+    if not is_server_admin(interaction):
+        await interaction.response.send_message("❌ 이 명령어는 서버 관리자만 사용할 수 있습니다.", ephemeral=True)
+        return
+    key = get_api_key(interaction.guild_id, service)
+    if not key:
+        await interaction.response.send_message(f"❌ `{service}` 키가 등록되지 않았습니다.", ephemeral=True)
+    else:
+        await interaction.response.send_message(f"🔑 `{service}` 키: `{key}`", ephemeral=True)
+
 client.run(os.environ["DISCORD_TOKEN"])
