@@ -20,7 +20,6 @@ class MyClient(discord.Client):
 
 client = MyClient()
 
-# /help 커맨드
 @client.tree.command(name="help", description="따까리 봇 도움말")
 async def help(interaction: discord.Interaction):
     embed = discord.Embed(
@@ -38,7 +37,6 @@ async def help(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed, view=view)
 
-# /accordingtobot 커맨드
 @client.tree.command(name="accordingtobot", description="서버에 공지를 전송합니다 (관리자 전용)")
 @app_commands.describe(message="전송할 공지 내용을 입력하세요")
 async def accordingtobot(interaction: discord.Interaction, message: str):
@@ -52,7 +50,6 @@ async def accordingtobot(interaction: discord.Interaction, message: str):
     await channel.send(f"📢 서버 공지사항: {message}")
     await interaction.response.send_message(f"✅ 공지가 {channel.mention} 채널에 전송되었습니다.", ephemeral=True)
 
-# 신규 멤버 환영
 async def welcome_member(member):
     channel = discord.utils.get(member.guild.text_channels, name="환영합니다")
     role = discord.utils.get(member.guild.roles, name="회원")
@@ -86,7 +83,7 @@ async def on_presence_update(before, after):
     if after.status != discord.Status.offline and after.id not in client.welcomed_members:
         await welcome_member(after)
 
-# Flask 웹서버
+
 app = Flask("")
 
 @app.route("/")
@@ -97,9 +94,7 @@ def run_flask():
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
 
-# Flask를 쓰레드로 실행
 flask_thread = threading.Thread(target=run_flask)
 flask_thread.start()
 
-# Discord 봇 실행
 client.run(os.environ["DISCORD_TOKEN"])
