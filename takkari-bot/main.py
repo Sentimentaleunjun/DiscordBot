@@ -1,6 +1,6 @@
 import discord
 from discord import app_commands
-from flask import Flask
+from Flask import Flask
 import os
 import threading
 
