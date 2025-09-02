@@ -88,7 +88,7 @@ app = Flask("")
 
 @app.route("/")
 def home():
-    return "따까리봇 웹서버가 정상 작동 중입니다! 따까리봇 디스코드 봇 , Virsion 0.5 Betatest"
+    return "따까리봇 웹서버가 정상 작동 중입니다! 따까리봇 디스코드 봇 , Version 0.5 Betatest"
 
 def run_flask():
     port = int(os.environ.get("PORT", 8080))
