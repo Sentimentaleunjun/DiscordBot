@@ -23,11 +23,10 @@ class MyClient(discord.Client):
 
 client = MyClient()
 
-# ===== 추가: 상태 메시지 변경 =====
 status_messages = cycle([
-    "/help 입력해보세요!",
+    "채팅로그 기록 관리중🔧",
     "서버 관리 중 🔧",
-    "GSEJ Company Beta v0.5"
+    "GSEJ Company:Beta v0.5"
 ])
 
 @tasks.loop(seconds=60)
@@ -44,6 +43,11 @@ async def help(interaction: discord.Interaction):
     )
     embed.add_field(name="✅ `/help`", value="따까리봇 도움말을 확인합니다", inline=False)
     embed.add_field(name="✅ `/accordingtobot [message]`", value="서버에 공지를 전송합니다 (관리자 전용), 반드시 '공지' 채널에서만 작동", inline=False)
+    embed.add_field(name="✅ `/ping`", value="봇의 응답 속도를 확인합니다", inline=False)
+    embed.add_field(name="✅ `/serverinfo`", value="서버의 기본 정보를 확인합니다", inline=False)
+    embed.add_field(name="✅ `/restart`", value="봇을 재시작합니다 (관리자 전용)", inline=False)
+
+
     embed.set_thumbnail(url=interaction.client.user.display_avatar.url)
     embed.set_footer(text="앞으로 더 많은 기능이 추가됩니다 🚀 | Edited by GSEJ Company . This is beta version")
 
@@ -99,7 +103,6 @@ async def on_presence_update(before, after):
     if after.status != discord.Status.offline and after.id not in client.welcomed_members:
         await welcome_member(after)
 
-# ===== 추가 기능 명령어들 =====
 @client.tree.command(name="ping", description="봇의 응답 속도를 확인합니다")
 async def ping(interaction: discord.Interaction):
     latency = round(client.latency * 1000)
@@ -123,9 +126,7 @@ async def restart(interaction: discord.Interaction):
         return
     await interaction.response.send_message("♻️ 봇을 재시작합니다...", ephemeral=True)
     os.execv(sys.executable, ['python'] + sys.argv)
-# ============================================
 
-# Flask 서버
 app = Flask("")
 
 @app.route("/")
