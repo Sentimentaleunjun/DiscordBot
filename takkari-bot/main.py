@@ -1,8 +1,11 @@
 import discord
 from discord import app_commands
+from discord.ext import tasks
 from flask import Flask
 import os
+import sys
 import threading
+from itertools import cycle
 
 # Discord intents
 intents = discord.Intents.default()
@@ -19,6 +22,18 @@ class MyClient(discord.Client):
         self.welcomed_members = set()
 
 client = MyClient()
+
+# ===== 추가: 상태 메시지 변경 =====
+status_messages = cycle([
+    "/help 입력해보세요!",
+    "서버 관리 중 🔧",
+    "GSEJ Company Beta v0.5"
+])
+
+@tasks.loop(seconds=60)
+async def change_status():
+    await client.change_presence(activity=discord.Game(next(status_messages)))
+# =================================
 
 @client.tree.command(name="help", description="따까리 봇 도움말")
 async def help(interaction: discord.Interaction):
@@ -68,6 +83,7 @@ async def on_ready():
         await client.tree.sync()
         client.synced = True
     print(f"✅ 봇 로그인 완료: {client.user} (ID: {client.user.id})")
+    change_status.start()  # ===== 추가: 상태 메시지 변경 루프 시작 =====
     for guild in client.guilds:
         for member in guild.members:
             if not member.bot and member.status != discord.Status.offline:
@@ -83,7 +99,33 @@ async def on_presence_update(before, after):
     if after.status != discord.Status.offline and after.id not in client.welcomed_members:
         await welcome_member(after)
 
+# ===== 추가 기능 명령어들 =====
+@client.tree.command(name="ping", description="봇의 응답 속도를 확인합니다")
+async def ping(interaction: discord.Interaction):
+    latency = round(client.latency * 1000)
+    await interaction.response.send_message(f"🏓 Pong! {latency}ms")
 
+@client.tree.command(name="serverinfo", description="서버 정보를 확인합니다")
+async def serverinfo(interaction: discord.Interaction):
+    guild = interaction.guild
+    embed = discord.Embed(title=f"{guild.name} 서버 정보", color=discord.Color.green())
+    embed.add_field(name="서버 ID", value=guild.id, inline=False)
+    embed.add_field(name="멤버 수", value=guild.member_count, inline=False)
+    embed.add_field(name="소유자", value=guild.owner, inline=False)
+    if guild.icon:
+        embed.set_thumbnail(url=guild.icon.url)
+    await interaction.response.send_message(embed=embed)
+
+@client.tree.command(name="restart", description="봇을 재시작합니다 (관리자 전용)")
+async def restart(interaction: discord.Interaction):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("❌ 관리자만 사용할 수 있습니다.", ephemeral=True)
+        return
+    await interaction.response.send_message("♻️ 봇을 재시작합니다...", ephemeral=True)
+    os.execv(sys.executable, ['python'] + sys.argv)
+# ============================================
+
+# Flask 서버
 app = Flask("")
 
 @app.route("/")
@@ -98,3 +140,4 @@ flask_thread = threading.Thread(target=run_flask)
 flask_thread.start()
 
 client.run(os.environ["DISCORD_TOKEN"])
+
