@@ -1,7 +1,9 @@
 import os
+import threading
 import discord
 from discord import app_commands
 from discord.ext import commands
+from flask import Flask
 import aiohttp
 import sqlite3
 
@@ -20,7 +22,6 @@ cur.execute("CREATE TABLE IF NOT EXISTS keys (service TEXT PRIMARY KEY, api_key 
 conn.commit()
 
 async def get_api_key(service: str):
-    # Render 환경변수 우선, 없으면 DB 확인
     env_key = os.getenv(service.upper() + "_KEY")
     if env_key:
         return env_key
@@ -103,5 +104,18 @@ async def ask(interaction: discord.Interaction, *, question: str):
             data = await resp.json()
             answer = data["choices"][0]["message"]["content"]
             await interaction.followup.send(answer)
+
+# Flask 서버 (Render 무료 유지용)
+app = Flask(__name__)
+@app.route("/")
+def home():
+    return "이페이지는 따까리봇 웹페이지입니다. 이페이지를 보셨다면 디스코드 따까리봇이 정상작동 중입니다. This is takkaribot server, 2025 GSEJ Company. beta"
+
+def run_flask():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
+
+flask_thread = threading.Thread(target=run_flask)
+flask_thread.start()
 
 bot.run(os.getenv("DISCORD_TOKEN"))
