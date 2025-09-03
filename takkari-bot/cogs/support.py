@@ -19,3 +19,8 @@ class Support(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(Support(bot))
+
+async def setup(bot):
+    await bot.add_cog(HelpCog(bot))
+
+
