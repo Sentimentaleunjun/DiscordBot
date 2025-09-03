@@ -3,14 +3,12 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.db
+
+# Virtual env
 .venv/
 env/
 venv/
-.idea/
-.vscode/
-*.log
 
-# OS
-.DS_Store
-Thumbs.db
-
+# SQLite DB
+/data/bot.db
