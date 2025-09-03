@@ -1,45 +1,50 @@
 import os
-import asyncio
 import discord
 from discord.ext import commands
-from utils.db import init_db
-
-# Dummy web server
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 import uvicorn
-import threading
+import asyncio
+from utils.db import init_db, get_support_tickets
 
 TOKEN = os.getenv("DISCORD_TOKEN")
+intents = discord.Intents.default()
+intents.message_content = True
 
-intents = discord.Intents.all()
-bot = commands.Bot(command_prefix="/", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)
 
-init_db()
-
-# ---- Discord Bot ----
-async def main_bot():
-    async with bot:
-        for filename in os.listdir("./cogs"):
-            if filename.endswith(".py") and filename != "__init__.py":
-                await bot.load_extension(f"cogs.{filename[:-3]}")
-        await bot.start(TOKEN)
-
-@bot.event
-async def on_ready():
-    print(f"봇 로그인 완료: {bot.user}")
-
-# ---- Dummy Web Server ----
+# ===== FastAPI 서버 =====
 app = FastAPI()
 
 @app.get("/")
-def home():
-    return {"status": "ok", "message": "Takkari Bot is running"}
+async def root():
+    return {"message": "봇은 정상적으로 실행 중입니다."}
 
-def run_web():
-    port = int(os.getenv("PORT", 5000))  # Render 제공 포트
-    uvicorn.run(app, host="0.0.0.0", port=port)
+@app.get("/support")
+async def view_support(request: Request):
+    key = request.query_params.get("key")
+    admin_key = os.getenv("ADMIN_KEY")
 
-# ---- Run Both ----
+    if key != admin_key:
+        return {"error": "인증 실패. 관리자만 접근 가능합니다."}
+
+    tickets = get_support_tickets()
+    return {"tickets": tickets}
+
+# ===== Discord Bot + FastAPI 같이 실행 =====
+async def start_bot():
+    async with bot:
+        await bot.start(TOKEN)
+
+def run():
+    loop = asyncio.get_event_loop()
+
+    # FastAPI 실행 (서브 스레드)
+    config = uvicorn.Config(app, host="0.0.0.0", port=10000, log_level="info")
+    server = uvicorn.Server(config)
+
+    loop.create_task(server.serve())
+    loop.run_until_complete(start_bot())
+
 if __name__ == "__main__":
-    threading.Thread(target=run_web).start()
-    asyncio.run(main_bot())
+    init_db()
+    run()
