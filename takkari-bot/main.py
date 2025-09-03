@@ -8,7 +8,6 @@ import aiohttp
 import sqlite3
 import logging
 
-# 로깅 설정 (모든 로그를 bot.log에 기록)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -26,7 +25,8 @@ intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
 
-# DB 연결 (키 저장)
+OWNER_ID = 909360134566862878
+
 conn = sqlite3.connect("bot.db")
 cur = conn.cursor()
 cur.execute("CREATE TABLE IF NOT EXISTS keys (service TEXT PRIMARY KEY, api_key TEXT)")
@@ -46,23 +46,19 @@ async def on_ready():
     logging.info(f"봇 로그인 완료: {bot.user}")
     print(f"봇 로그인 완료: {bot.user}")
 
-@bot.event
-async def on_command(ctx):
-    logging.info(f"{ctx.author} 사용자가 명령어 실행: {ctx.command}")
-
-@tree.command(name="ping", description="봇의 핑 확인")
+@tree.command(name="ping", description="봇의 핑을 확인합니다.")
 async def ping(interaction: discord.Interaction):
     logging.info(f"{interaction.user} -> /ping 실행")
     await interaction.response.send_message(f"🏓 Pong! {round(bot.latency * 1000)}ms")
 
-@tree.command(name="restart", description="봇 재시작 (개발자만 가능)")
+@tree.command(name="restart", description="봇을 재시작합니다 (개발자 전용)")
 async def restart(interaction: discord.Interaction):
     logging.info(f"{interaction.user} -> /restart 실행 시도")
-    if interaction.user.id != 909360134566862878:
+    if interaction.user.id != OWNER_ID:
         await interaction.response.send_message("이 명령어는 개발자만 사용할 수 있습니다.", ephemeral=True)
         return
     await interaction.response.send_message("봇을 재시작합니다...", ephemeral=True)
-    logging.warning("봇이 수동 재시작됩니다.")
+    logging.warning("봇이 재시작됩니다.")
     os._exit(1)
 
 @tree.command(name="serverinfo", description="서버 정보를 표시합니다.")
@@ -84,6 +80,36 @@ async def userinfo(interaction: discord.Interaction, user: discord.Member = None
     embed.add_field(name="계정 생성일", value=user.created_at.strftime("%Y-%m-%d %H:%M:%S"))
     embed.add_field(name="서버 참가일", value=user.joined_at.strftime("%Y-%m-%d %H:%M:%S"))
     await interaction.response.send_message(embed=embed)
+
+@tree.command(name="loglookup", description="로그 파일의 마지막 n줄을 조회합니다 (관리자 전용).")
+async def loglookup(interaction: discord.Interaction, lines: int = 20):
+    logging.info(f"{interaction.user} -> /loglookup 실행")
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("이 명령어는 관리자만 사용할 수 있습니다.", ephemeral=True)
+        return
+    try:
+        with open("bot.log", "r", encoding="utf-8") as f:
+            log_data = f.readlines()[-lines:]
+        content = "".join(log_data) or "로그가 없습니다."
+        if len(content) > 1900:
+            content = content[-1900:]
+        await interaction.response.send_message(f"```\n{content}\n```", ephemeral=True)
+    except FileNotFoundError:
+        await interaction.response.send_message("로그 파일을 찾을 수 없습니다.", ephemeral=True)
+
+@tree.command(name="dblookup", description="저장된 API 키를 조회합니다 (관리자 전용).")
+async def dblookup(interaction: discord.Interaction):
+    logging.info(f"{interaction.user} -> /dblookup 실행")
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("이 명령어는 관리자만 사용할 수 있습니다.", ephemeral=True)
+        return
+    cur.execute("SELECT service, api_key FROM keys")
+    rows = cur.fetchall()
+    if not rows:
+        await interaction.response.send_message("저장된 키가 없습니다.", ephemeral=True)
+        return
+    content = "\n".join([f"{svc}: {key}" for svc, key in rows])
+    await interaction.response.send_message(f"```\n{content}\n```", ephemeral=True)
 
 @tree.command(name="weather", description="날씨를 확인합니다.")
 async def weather(interaction: discord.Interaction, city: str):
@@ -130,11 +156,10 @@ async def ask(interaction: discord.Interaction, *, question: str):
             answer = data["choices"][0]["message"]["content"]
             await interaction.followup.send(answer)
 
-# Flask 서버 (Render 무료 유지용)
 app = Flask(__name__)
 @app.route("/")
 def home():
-    return "봇이 정상 작동 중입니다! 2025 GSEJ Company in Render"
+    return "봇이 정상 작동 중입니다! GSEJ Company in Render"
 
 def run_flask():
     port = int(os.environ.get("PORT", 8080))
