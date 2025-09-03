@@ -4,14 +4,8 @@ from discord.ext import commands
 from utils.db import init_db
 
 TOKEN = os.getenv("DISCORD_TOKEN")
-DEV_ID = 909360134566862878
+DEV_ID = 909360134566862878  # restart 전용 권한
 
-intents = discord.Intents.all()
-bot = commands.Bot(command_prefix="/", intents=intents)
-
-init_db()
-
-# 변경 후
 intents = discord.Intents.all()
 
 class TakkariBot(commands.Bot):
@@ -30,5 +24,5 @@ bot = TakkariBot()
 async def on_ready():
     print(f"✅ 봇 로그인 완료: {bot.user}")
 
+init_db()
 bot.run(TOKEN)
-
