@@ -1,29 +1,22 @@
 import os
+import asyncio
 import discord
 from discord.ext import commands
-from utils.db import init_db
 
 TOKEN = os.getenv("DISCORD_TOKEN")
-DEV_ID = 909360134566862878
 
-intents = discord.Intents.all()
-bot = commands.Bot(command_prefix="/", intents=intents)
+intents = discord.Intents.default()
+intents.message_content = True  # 메시지 내용 읽기 허용 (필요 시)
+bot = commands.Bot(command_prefix="!", intents=intents)
 
-# DB 초기화
-init_db()
+async def main():
+    async with bot:
+        
+   for filename in os.listdir("./cogs"):
+            if filename.endswith(".py") and filename != "__init__.py":
+                await bot.load_extension(f"cogs.{filename[:-3]}")
+    
+        await bot.start(TOKEN)
 
-@bot.event
-async def on_ready():
-    print(f"봇 로그인 완료: {bot.user}")
-
-# Cog 자동 로드 (__init__.py 제외)
-for filename in os.listdir("./cogs"):
-    if filename.endswith(".py") and filename != "__init__.py":
-        await self.load_extension(f"cogs.{filename[:-3]}")
-
-
-@bot.event
-async def setup_hook():
-    await load_cogs()
-
-bot.run(TOKEN)
+if __name__ == "__main__":
+    asyncio.run(main())
