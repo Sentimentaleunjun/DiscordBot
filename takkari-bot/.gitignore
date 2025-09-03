@@ -1,0 +1,18 @@
+# Python 가상환경
+venv/
+__pycache__/
+*.pyc
+
+# DB 파일 (실제 데이터는 깃허브에 올리지 않음)
+database/*.db
+
+# 로그 파일
+bot.log
+
+# 환경변수 파일
+.env
+
+# IDE/OS 설정 파일
+.vscode/
+.idea/
+.DS_Store
