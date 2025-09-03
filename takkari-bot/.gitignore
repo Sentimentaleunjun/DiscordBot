@@ -1,7 +1,4 @@
+database/*.db
 __pycache__/
 *.pyc
 .env
-db/bot.db
-.DS_Store
-.vscode/
-database/*.db
