@@ -3,6 +3,9 @@ from discord.ext import commands
 from flask import Flask, render_template, request, redirect, session
 import threading, os, sqlite3
 from dotenv import load_dotenv
+from utils.db import init_db
+
+init_db()
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
