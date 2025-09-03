@@ -4,3 +4,4 @@ __pycache__/
 db/bot.db
 .DS_Store
 .vscode/
+database/*.db
