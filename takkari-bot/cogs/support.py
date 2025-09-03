@@ -1,18 +1,20 @@
-import discord, sqlite3
+import sqlite3
+import discord
 from discord.ext import commands
+from utils.db import DB_PATH
 
 class Support(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.hybrid_command(name="support", description="고객지원 문의 등록")
-    async def support(self, ctx, *, message: str):
-        conn = sqlite3.connect("db/bot.db")
+    @commands.command(name="support")
+    async def support_command(self, ctx, *, message: str):
+        conn = sqlite3.connect(DB_PATH)
         cur = conn.cursor()
-        cur.execute("INSERT INTO tickets (user, message) VALUES (?, ?)", (str(ctx.author), message))
+        cur.execute("INSERT INTO support_requests (user_id, message) VALUES (?, ?)", (str(ctx.author.id), message))
         conn.commit()
         conn.close()
-        await ctx.send(f"✅ 문의가 등록되었습니다. 감사합니다, {ctx.author.mention}!")
+        await ctx.send("문의가 정상적으로 접수되었습니다!")
 
 async def setup(bot):
     await bot.add_cog(Support(bot))
