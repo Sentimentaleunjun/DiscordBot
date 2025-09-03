@@ -15,10 +15,8 @@ init_db()
 async def on_ready():
     print(f"봇 로그인 완료: {bot.user}")
 
-# Cog 자동 로드
 for filename in os.listdir("./cogs"):
     if filename.endswith(".py") and filename != "__init__.py":
         bot.load_extension(f"cogs.{filename[:-3]}")
 
 bot.run(TOKEN)
-
