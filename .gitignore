@@ -17,8 +17,9 @@ Thumbs.db
 # Environment Variables
 .env
 
-# Database (공유 DB는 제외 가능)
-shared/*.db
+# Database (ignore all, except shared/user.db)
+*.db
+!shared/user.db
 
 # Logs
 *.log
