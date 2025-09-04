@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>고객지원</title>
+</head>
+<body>
+  <h1>📌 고객지원 문의</h1>
+  <ul>
+    {% for user, msg in supports %}
+      <li><b>{{ user }}</b>: {{ msg }}</li>
+    {% endfor %}
+  </ul>
+</body>
+</html>
