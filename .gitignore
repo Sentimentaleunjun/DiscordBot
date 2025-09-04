@@ -1,5 +1,24 @@
+# Python
 __pycache__/
 *.pyc
-*.log
+*.pyo
+*.pyd
+*.db-journal
+
+# Virtual Environment
+.venv/
+env/
+venv/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Environment Variables
 .env
-shared/user.db
+
+# Database (공유 DB는 제외 가능)
+shared/*.db
+
+# Logs
+*.log
