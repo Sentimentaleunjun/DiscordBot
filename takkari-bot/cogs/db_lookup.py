@@ -19,4 +19,5 @@ class DBLookup(commands.Cog):
             msg = "\n".join([f"[{d}] {u}: {c}" for u, c, d in rows[:5]])
             await ctx.send(f"📑 최근 문의 내역:\n{msg}")
 
-async def setup
+async def setup(bot):
+    await bot.add_cog(dblookup(bot))
