@@ -4,28 +4,14 @@ __pycache__/
 *.pyo
 *.pyd
 *.db
-*.sqlite3
 
-# Virtual environment
-.venv/
-env/
+# 환경 변수 파일
+.env
+
+# 가상환경
 venv/
+.venv/
 
-# IDE & OS files
+# IDE
 .vscode/
 .idea/
-*.swp
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-
-# Cache
-.cache/
-*.egg-info/
-dist/
-build/
-
-# Local secrets (환경변수 .env 파일 등)
-.env
