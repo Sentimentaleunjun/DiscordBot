@@ -3,10 +3,10 @@ import threading
 import discord
 from discord.ext import commands
 from flask import Flask, render_template
-from utils.db import init_db
+from takkari_bot.utils.db import init_db   # ✅ utils → takkari_bot.utils 로 변경
 
-# --- Flask 설정 ---
-app = Flask(__name__)
+# --- Flask ---
+app = Flask(__name__, template_folder="support-web/templates")
 
 @app.route("/")
 def index():
@@ -16,7 +16,7 @@ def index():
 def dashboard():
     return render_template("dashboard.html")
 
-# --- Discord 봇 설정 ---
+# --- Discord Bot ---
 TOKEN = os.getenv("DISCORD_TOKEN")
 DEV_ID = int(os.getenv("DEV_ID", "0"))
 
@@ -33,7 +33,7 @@ for filename in os.listdir("./takkari-bot/cogs"):
     if filename.endswith(".py") and filename != "__init__.py":
         bot.load_extension(f"takkari-bot.cogs.{filename[:-3]}")
 
-# --- 병렬 실행 ---
+# --- Run ---
 def run_discord_bot():
     bot.run(TOKEN)
 
