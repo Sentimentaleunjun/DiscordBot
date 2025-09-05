@@ -1,5 +1,6 @@
 import os
 from threading import Thread
+from takkari_bot.main_bot import run_discord_bot
 
 # Discord Bot 실행 함수
 from takkari_bot.main_bot import run_discord_bot  
