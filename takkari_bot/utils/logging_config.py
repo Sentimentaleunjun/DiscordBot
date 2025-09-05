@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 import os
 
 def setup_logging():
@@ -14,4 +14,4 @@ def setup_logging():
             logging.StreamHandler()
         ]
     )
-    return logging.getLogger("takkari-bot")
+    return logging.getLogger("takkari_bot")

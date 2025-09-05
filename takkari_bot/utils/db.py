@@ -1,4 +1,4 @@
-import sqlite3
+﻿import sqlite3
 import os
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "../../shared/user.db")
@@ -7,7 +7,7 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    # 사용자 테이블
+    # ?ъ슜???뚯씠釉?
     c.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,7 +17,7 @@ def init_db():
     )
     """)
 
-    # 패치노트
+    # ?⑥튂?명듃
     c.execute("""
     CREATE TABLE IF NOT EXISTS patchnotes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,7 +26,7 @@ def init_db():
     )
     """)
 
-    # 고객지원
+    # 怨좉컼吏??
     c.execute("""
     CREATE TABLE IF NOT EXISTS support (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,7 +36,7 @@ def init_db():
     )
     """)
 
-    # 예약 공지
+    # ?덉빟 怨듭?
     c.execute("""
     CREATE TABLE IF NOT EXISTS schedules (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,7 +47,7 @@ def init_db():
     )
     """)
 
-    # 즉시 공지 로그
+    # 利됱떆 怨듭? 濡쒓렇
     c.execute("""
     CREATE TABLE IF NOT EXISTS notices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+﻿from flask import Flask, render_template, jsonify
 from support_web.utils.db import get_support_data
 
 
@@ -14,5 +14,5 @@ def dashboard():
 
 @app.route("/api/support")
 def support_api():
-    data = get_support_data()  # DB에서 문의 불러오기
+    data = get_support_data()  # DB?먯꽌 臾몄쓽 遺덈윭?ㅺ린
     return jsonify(data)

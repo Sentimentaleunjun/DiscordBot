@@ -1,4 +1,4 @@
-import os
+﻿import os
 import discord
 from discord.ext import commands
 
@@ -14,12 +14,12 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"✅ 로그인 완료: {bot.user}")
+    print(f"??濡쒓렇???꾨즺: {bot.user}")
 
 
 @bot.event
 async def setup_hook():
-    """cogs 자동 로드"""
+    """cogs ?먮룞 濡쒕뱶"""
     import os
     for filename in os.listdir("./takkari_bot/cogs"):
         if filename.endswith(".py") and filename != "__init__.py":
@@ -27,8 +27,8 @@ async def setup_hook():
 
 
 def run_discord_bot():
-    """외부에서 실행"""
+    """?몃??먯꽌 ?ㅽ뻾"""
     if not TOKEN:
-        raise ValueError("❌ DISCORD_TOKEN 환경변수가 설정되지 않았습니다.")
+        raise ValueError("??DISCORD_TOKEN ?섍꼍蹂?섍? ?ㅼ젙?섏? ?딆븯?듬땲??")
     bot.run(TOKEN)
 
