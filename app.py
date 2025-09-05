@@ -5,7 +5,7 @@ from flask import Flask, render_template
 import discord
 from discord.ext import commands
 from takkari_bot.utils.db import init_db   # utils/db.py 에 있는 init_db 불러오기
-
+from support-web.utils.db import get_support_data
 # ------------------------
 # Flask Web
 # ------------------------
