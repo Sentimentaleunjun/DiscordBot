@@ -1,5 +1,6 @@
 from flask import Flask, render_template, jsonify
-from utils.db import get_support_data
+from support_web.utils.db import get_support_data
+
 
 app = Flask(__name__, template_folder="templates")
 
