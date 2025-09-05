@@ -1,7 +1,9 @@
 ﻿import sqlite3
 import os
 
+# DB 파일 경로
 DB_PATH = os.path.join(os.path.dirname(__file__), "../../shared/user.db")
+
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -59,3 +61,13 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+
+def get_supports():
+    """support 테이블에서 고객지원 기록 가져오기"""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT id, user, message, created_at FROM support ORDER BY created_at DESC")
+    rows = c.fetchall()
+    conn.close()
+    return rows
