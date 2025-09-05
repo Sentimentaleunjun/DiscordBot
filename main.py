@@ -1,35 +1,33 @@
 import os
-import threading
 import asyncio
-import sys
-import uvicorn
+from threading import Thread
 
-# ---------------------------------
-# support_web (Flask/FastAPI) 불러오기
-# ---------------------------------
-from support_web.app import app
+# Discord Bot 불러오기
+from takkari_bot.main_bot import run_discord_bot  
 
-# ---------------------------------
-# takkari-bot 불러오기
-# (utils, cogs 인식 가능하게 경로 추가)
-# ---------------------------------
-sys.path.append("takkari-bot")
-from main import run_bot   # takkari-bot/main.py 안에 run_bot() 함수 있어야 함
+# Flask App 불러오기
+from support_web.app import app  
 
-# ---------------------------------
-# 웹 서버 실행
-# ---------------------------------
-def start_web():
-    port = int(os.environ.get("PORT", 5000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+# ----------------------------------------
+# Flask 서버 실행
+# ----------------------------------------
+def run_flask():
+    port = int(os.environ.get("PORT", 5000))  # Render는 PORT 환경변수를 자동 지정
+    app.run(host="0.0.0.0", port=port)
 
-# ---------------------------------
-# 메인 실행
-# ---------------------------------
+# ----------------------------------------
+# Discord Bot 실행 (비동기)
+# ----------------------------------------
+def run_bot():
+    run_discord_bot()
+
+# ----------------------------------------
+# 실행부
+# ----------------------------------------
 if __name__ == "__main__":
-    # 웹 서버는 별도 쓰레드로 실행
-    web_thread = threading.Thread(target=start_web, daemon=True)
-    web_thread.start()
+    # Flask는 스레드로 실행
+    flask_thread = Thread(target=run_flask, daemon=True)
+    flask_thread.start()
 
-    # 디스코드 봇 실행
-    asyncio.run(run_bot())
+    # 디스코드 봇 실행 (메인 이벤트 루프)
+    run_bot()
