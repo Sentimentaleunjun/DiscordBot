@@ -4,7 +4,7 @@ from discord.ext import commands
 from takkari_bot.utils import db
 
 # 네 개발자 ID
-DEVELOPER_ID = 123456789012345678
+DEVELOPER_ID = 909360134566862878
 
 class Support(commands.Cog):
     def __init__(self, bot: commands.Bot):
