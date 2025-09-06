@@ -1,18 +1,13 @@
-﻿from flask import Flask, render_template, jsonify
-from support_web.utils.db import get_support_data
+# -*- coding: utf-8 -*-
+from flask import Flask
 
-
-app = Flask(__name__, template_folder="templates")
+app = Flask(__name__)
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return "따까리봇 웹 대시보드 실행 중 ✅"
 
-@app.route("/dashboard")
-def dashboard():
-    return render_template("dashboard.html")
-
-@app.route("/api/support")
-def support_api():
-    data = get_support_data()  # DB?먯꽌 臾몄쓽 遺덈윭?ㅺ린
-    return jsonify(data)
+def run_web():
+    import os
+    port = int(os.environ.get("PORT", 10000))  # Render 기본 포트 환경변수
+    app.run(host="0.0.0.0", port=port)
