@@ -1,18 +1,14 @@
-# takkari_bot/cogs/support.py
-# -*- coding: utf-8 -*-
 import discord
+from discord import app_commands
 from discord.ext import commands
-from takkari_bot.utils.db import add_support
 
 class Support(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="서포트")
-    async def support_command(self, ctx, *, message: str):
-        """유저의 요청을 DB에 저장"""
-        add_support(str(ctx.author.id), message)
-        await ctx.send(f"✅ {ctx.author.mention}, 요청이 접수되었습니다!")
+    @app_commands.command(name="support", description="서포트를 등록합니다.")
+    async def support(self, interaction: discord.Interaction, content: str):
+        await interaction.response.send_message(f"✅ 서포트 등록됨: {content}")
 
 async def setup(bot):
     await bot.add_cog(Support(bot))
