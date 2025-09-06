@@ -61,14 +61,15 @@ async def on_ready():
 
     # Cog 로드
     initial_extensions = [
-        "takkari_bot.cogs.helpcmd",
-        "takkari_bot.cogs.schedule",
-        "takkari_bot.cogs.patchnote",
-        "takkari_bot.cogs.support",
-        "takkari_bot.cogs.userinfo",
-        "takkari_bot.cogs.db_lookup",
-        "takkari_bot.cogs.loglookup",
-        "takkari_bot.cogs.announce",
+        "takkari_bot.cogs.help.py",
+        "takkari_bot.cogs.schedule.py",
+        "takkari_bot.cogs.patchnote.py",
+        "takkari_bot.cogs.support.py",
+        "takkari_bot.cogs.userinfo.py",
+        "takkari_bot.cogs.db_lookup.py",
+        "takkari_bot.cogs.loglookup.py",
+        "takkari_bot.cogs.dm_feature.py",
+        "takkari_bot.cogs.accordingtobot.py",
     ]
 
     for ext in initial_extensions:
