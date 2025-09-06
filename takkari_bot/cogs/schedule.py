@@ -1,3 +1,4 @@
+# schedule.py
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -5,7 +6,7 @@ from discord import app_commands
 class Schedule(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.schedules = []  # 메모리 저장 (DB 연결 가능)
+        self.schedules = []  # 메모리 저장 (원하면 DB로 교체)
 
     @app_commands.command(name="schedule", description="일정을 확인합니다.")
     async def schedule(self, interaction: discord.Interaction):
