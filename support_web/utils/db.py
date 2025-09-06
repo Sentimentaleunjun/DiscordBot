@@ -1,33 +1,43 @@
 import sqlite3
+from datetime import datetime
 
 DB_PATH = "support.db"
 
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS support_requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT NOT NULL,
-            message TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.commit()
-    conn.close()
+def connect():
+    return sqlite3.connect(DB_PATH)
 
-def add_support(user_id: str, message: str):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT INTO support_requests (user_id, message) VALUES (?, ?)", (user_id, message))
-    conn.commit()
-    conn.close()
+def init_db():
+    with connect() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS supports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT,
+            message TEXT,
+            status TEXT DEFAULT 'open',
+            created_at TEXT
+        )
+        """)
+        conn.commit()
+
+def add_support(user_id, message):
+    with connect() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+        INSERT INTO supports (user_id, message, status, created_at)
+        VALUES (?, ?, 'open', ?)
+        """, (user_id, message, datetime.utcnow().isoformat()))
+        conn.commit()
 
 def get_supports():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = None  # ⚡ 튜플로 반환 고정
-    c = conn.cursor()
-    c.execute("SELECT id, user_id, message, created_at FROM support_requests ORDER BY created_at DESC")
-    rows = c.fetchall()
-    conn.close()
-    return rows
+    with connect() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT id, user_id, message, status, created_at FROM supports ORDER BY id DESC")
+        return cur.fetchall()
+
+def close_support(support_id):
+    with connect() as conn:
+        cur = conn.cursor()
+        cur.execute("UPDATE supports SET status = 'closed' WHERE id = ?", (support_id,))
+        conn.commit()
+        return cur.rowcount > 0
