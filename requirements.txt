@@ -1,4 +1,4 @@
-discord.py==2.3.2
+discord.py==2.6
 flask==3.0.3
 gunicorn==23.0.0
 uvicorn==0.30.1
