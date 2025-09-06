@@ -24,7 +24,8 @@ def home():
     return "Bot is running!"
 
 def run_web():
-    app.run(host="0.0.0.0", port=10000)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+
 
 # 이벤트: 봇 준비 완료
 @bot.event
