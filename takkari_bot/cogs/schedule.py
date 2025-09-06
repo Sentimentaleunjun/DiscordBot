@@ -11,13 +11,13 @@ class Schedule(commands.Cog):
     @commands.command(name="schedule")
     async def schedule(self, ctx, time: str, *, content: str):
         if ctx.author.id != self.bot.admin_id:
-            await ctx.send("??愿由ъ옄留?媛?ν빀?덈떎.")
+            await ctx.send("??愿由ъ옄留?媛?ν빀?덈떎.")
             return
 
         try:
             when = datetime.strptime(time, "%Y-%m-%d %H:%M")
         except ValueError:
-            await ctx.send("?좑툘 ?쒓컙 ?뺤떇? YYYY-MM-DD HH:MM")
+            await ctx.send("?좑툘 ?쒓컙 ?뺤떇? YYYY-MM-DD HH:MM")
             return
 
         self.schedules.append((when, content, ctx.channel.id))

@@ -8,7 +8,7 @@ class AccordingToBot(commands.Cog):
     @commands.command(name="accordingtobot")
     async def accordingtobot(self, ctx, *, content: str):
         if ctx.author.id != self.bot.admin_id:
-            await ctx.send("??愿由ъ옄留?媛?ν빀?덈떎.")
+            await ctx.send("??愿由ъ옄留?媛?ν빀?덈떎.")
             return
         await ctx.send(f"?뱼 怨듭?: {content}")
 

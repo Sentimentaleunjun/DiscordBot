@@ -11,7 +11,7 @@ from support_web.app import app
 
 def run_flask():
     """Flask ???쒕쾭 ?ㅽ뻾"""
-    port = int(os.environ.get("PORT", 5000))  # Render媛 PORT ?먮룞 ?좊떦
+    port = int(os.environ.get("PORT", 5000))  # Render媛 PORT ?먮룞 ?좊떦
     app.run(host="0.0.0.0", port=port)
 
 

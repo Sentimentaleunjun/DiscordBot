@@ -28,7 +28,7 @@ def init_db():
     )
     """)
 
-    # 怨좉컼吏??
+    # 怨좉컼吏??
     c.execute("""
     CREATE TABLE IF NOT EXISTS support (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
