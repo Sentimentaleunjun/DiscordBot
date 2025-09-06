@@ -7,8 +7,8 @@ from discord import app_commands
 # ---------------------------
 # 환경 변수
 # ---------------------------
-TOKEN = os.getenv("DISCORD_TOKEN", "YOUR_TOKEN")  # Render 환경 변수에 넣는 걸 추천
-PORT = int(os.getenv("PORT", "10000"))            # Render에서 지정한 포트
+TOKEN = os.getenv("DISCORD_TOKEN", "YOUR_TOKEN")  # Render 환경 변수 권장
+PORT = int(os.getenv("PORT", "10000"))            # Render 포트
 TEST_GUILD_ID = int(os.getenv("TEST_GUILD_ID", "0"))  # 테스트 서버 ID
 
 # ---------------------------
@@ -35,13 +35,13 @@ class MyClient(discord.Client):
         self.tree = app_commands.CommandTree(self)
 
     async def setup_hook(self):
-        # 코그 로드
+        # 코그 로드 (경로 수정됨)
         for ext in (
-            "cogs.help",
-            "cogs.schedule",
-            "cogs.patchnote",
-            "cogs.db_lookup",
-            "cogs.accordingtobot",
+            "takkari_bot.cogs.help",
+            "takkari_bot.cogs.schedule",
+            "takkari_bot.cogs.patchnote",
+            "takkari_bot.cogs.db_lookup",
+            "takkari_bot.cogs.accordingtobot",
         ):
             try:
                 await self.load_extension(ext)
