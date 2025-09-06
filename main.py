@@ -39,7 +39,7 @@ async def load_cogs():
     extensions = [
         "takkari_bot.cogs.help",       # help.py
         "takkari_bot.cogs.schedule",
-        "takkari_bot.cogs.patchNote",
+        "takkari_bot.cogs.patchnote",
         "takkari_bot.cogs.support",
         "takkari_bot.cogs.userinfo",
         "takkari_bot.cogs.db_lookup",
