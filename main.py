@@ -23,8 +23,13 @@ def index():
     return "✅ 따까리봇 웹 대시보드: 정상 작동 중!"
 
 def run_web():
-    port = int(os.environ.get("PORT", 5000))  # Render 지정 포트
+    port_str = os.environ.get("PORT", "5000")
+    try:
+        port = int(port_str)
+    except ValueError:
+        port = 5000
     app.run(host="0.0.0.0", port=port)
+
 
 # ===== Discord Bot =====
 intents = discord.Intents.default()
