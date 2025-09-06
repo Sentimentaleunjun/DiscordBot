@@ -1,7 +1,18 @@
+# support.py
 import discord
 from discord.ext import commands
 from discord import app_commands
-from takkari_bot.utils.db import add_support, get_supports
+
+# 외부/내부 의존성(없으면 코그 자체가 죽지 않도록 폴백)
+try:
+    from takkari_bot.utils.db import add_support, get_supports  # 프로젝트에 있을 때만 사용
+except Exception:
+    def add_support(user_id: str, message: str):
+        # 배포 환경에 DB가 없으면 /support는 "수신만" 표시
+        print("[support] add_support called (noop):", user_id, message)
+
+    def get_supports():
+        return []  # 목록 비어있다고 응답
 
 class Support(commands.Cog):
     def __init__(self, bot):
