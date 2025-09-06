@@ -4,16 +4,11 @@ from flask import Flask
 import discord
 from discord import app_commands
 
-# ---------------------------
-# 환경 변수
-# ---------------------------
-TOKEN = os.getenv("DISCORD_TOKEN", "YOUR_TOKEN")  # Render 환경 변수 권장
-PORT = int(os.getenv("PORT", "10000"))            # Render 포트
-TEST_GUILD_ID = int(os.getenv("TEST_GUILD_ID", "0"))  # 테스트 서버 ID
+TOKEN = os.getenv("DISCORD_TOKEN", "YOUR_TOKEN")
+PORT = int(os.getenv("PORT", "10000"))
+TEST_GUILD_ID = int(os.getenv("TEST_GUILD_ID", "0"))
 
-# ---------------------------
-# Flask 웹 서버
-# ---------------------------
+# Flask 웹
 app = Flask(__name__)
 
 @app.route("/")
@@ -23,9 +18,7 @@ def index():
 def run_web():
     app.run(host="0.0.0.0", port=PORT)
 
-# ---------------------------
-# Discord 봇
-# ---------------------------
+# Discord Bot
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -35,13 +28,14 @@ class MyClient(discord.Client):
         self.tree = app_commands.CommandTree(self)
 
     async def setup_hook(self):
-        # 코그 로드 (경로 수정됨)
+        # 코그 로드
         for ext in (
-            "takkari_bot.cogs.help",
-            "takkari_bot.cogs.schedule",
-            "takkari_bot.cogs.patchnote",
-            "takkari_bot.cogs.db_lookup",
-            "takkari_bot.cogs.accordingtobot",
+            "cogs.help",
+            "cogs.schedule",
+            "cogs.patchnote",
+            "cogs.db_lookup",
+            "cogs.accordingtobot",
+            "cogs.support",
         ):
             try:
                 await self.load_extension(ext)
@@ -60,14 +54,9 @@ class MyClient(discord.Client):
     async def on_ready(self):
         print(f"✅ Logged in as {self.user} (ID: {self.user.id})")
 
-# ---------------------------
-# 실행
-# ---------------------------
 if __name__ == "__main__":
-    # Flask는 쓰레드로 실행
-    web_thread = threading.Thread(target=run_web)
-    web_thread.start()
+    # Flask 쓰레드 실행
+    threading.Thread(target=run_web).start()
 
-    # Discord 봇 실행
     client = MyClient()
     client.run(TOKEN)
