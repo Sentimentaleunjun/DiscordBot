@@ -1,26 +1,22 @@
-﻿import discord
+# -*- coding: utf-8 -*-
+import discord
 from discord.ext import commands
-from takkari_bot.utils.db import add_patchnote, get_patchnotes
 
-class Patchnote(commands.Cog):
+class PatchnoteCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="patchnote")
-    async def patchnote(self, ctx, *, content: str = None):
-        if content:
-            if ctx.author.id != self.bot.admin_id:
-                await ctx.send("??沅뚰븳???놁뒿?덈떎.")
-                return
-            add_patchnote(content)
-            await ctx.send("???⑥튂?명듃媛 ?깅줉?섏뿀?듬땲??")
-        else:
-            notes = get_patchnotes()
-            if not notes:
-                await ctx.send("?벊 ?깅줉???⑥튂?명듃媛 ?놁뒿?덈떎.")
-            else:
-                msg = "\n".join([f"- {c} ({d})" for c, d in notes])
-                await ctx.send(f"?뱦 理쒖떊 ?⑥튂?명듃:\n{msg}")
+    @commands.command(name="패치노트")
+    async def patchnote(self, ctx):
+        embed = discord.Embed(
+            title="📜 패치노트",
+            description="최근 업데이트 내역입니다.",
+            color=0x66ff66
+        )
+        embed.add_field(name="v1.0.0", value="- 따까리봇 최초 출시", inline=False)
+        embed.add_field(name="v1.1.0", value="- 공지, 예약공지 기능 추가", inline=False)
+        embed.add_field(name="v1.2.0", value="- DB 조회, 지원 기능 추가", inline=False)
+        await ctx.send(embed=embed)
 
 async def setup(bot):
-    await bot.add_cog(Patchnote(bot))
+    await bot.add_cog(PatchnoteCog(bot))
