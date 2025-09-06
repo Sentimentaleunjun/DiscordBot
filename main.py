@@ -1,65 +1,27 @@
+# main.py
 import os
+import sys
+import pathlib
 import logging
+import threading
 import asyncio
-from itertools import cycle
-
 import discord
-from discord.ext import commands, tasks
-from discord import app_commands
+from discord.ext import commands
 
 from flask import Flask
-from threading import Thread
 
-# ---------------------------
-# 로깅 설정
-# ---------------------------
-logging.basicConfig(level=logging.INFO)
+# ===== 기본 설정 =====
+TOKEN = os.getenv("DISCORD_TOKEN") or "PUT_YOUR_TOKEN_HERE"
+GUILD_ID = int(os.getenv("GUILD_ID", "0")) or None
 
-# ---------------------------
-# Discord 봇 설정
-# ---------------------------
+BASE_DIR = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(BASE_DIR))
+
 intents = discord.Intents.default()
-intents.message_content = True
-intents.members = True
+intents.members = True  # 유저 관련 기능
+bot = commands.Bot(command_prefix="!", intents=intents)  # 접두사는 남기되 / 중심
 
-bot = commands.Bot(command_prefix="!", intents=intents)
-
-# 상태 메시지 로테이션
-statuses = cycle([
-    "GSEJ Company 서비스 중",
-    "새로운 기능 업데이트 확인",
-    "따까리봇 도움 필요해?"
-])
-
-@tasks.loop(seconds=20)
-async def cycle_status():
-    await bot.change_presence(activity=discord.Game(next(statuses)))
-
-# ---------------------------
-# Flask 웹 서버
-# ---------------------------
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "따까리봇 Web Service Running!"
-
-def run_web():
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-
-def keep_alive():
-    t = Thread(target=run_web)
-    t.start()
-
-# ---------------------------
-# 봇 이벤트
-# ---------------------------
-@bot.event
-async def on_ready():
-    logging.info(f"🤖 Logged in as {bot.user} ({bot.user.id})")
-
-  EXTENSIONS = [
+EXTENSIONS = [
     "takkari_bot.cogs.help",
     "takkari_bot.cogs.schedule",
     "takkari_bot.cogs.patchnote",
@@ -69,30 +31,62 @@ async def on_ready():
     "takkari_bot.cogs.loglookup",
     "takkari_bot.cogs.dm_feature",
     "takkari_bot.cogs.accordingtobot",
+]
 
-    ]
+# ===== Flask 웹 서버 (Render 포트 감시) =====
+app = Flask(__name__)
 
-    for ext in initial_extensions:
+@app.route("/")
+def home():
+    return "Takkari Bot is running!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
+
+# ===== 봇 상태 (Presence) =====
+STATUS_MESSAGES = [
+    "서버 관리 중",
+    "GSEJ Company 서비스 운영",
+    "문의는 /support 로!"
+]
+
+async def cycle_status():
+    while True:
+        for status in STATUS_MESSAGES:
+            await bot.change_presence(activity=discord.Game(name=status))
+            await asyncio.sleep(30)  # 30초마다 상태 변경
+
+# ===== Discord 이벤트 =====
+@bot.event
+async def setup_hook():
+    # 코그 로드
+    for ext in EXTENSIONS:
         try:
-            bot.load_extension(ext)
-            logging.info(f"✅ Loaded extension: {ext}")
+            await bot.load_extension(ext)
+            logging.info("✅ Loaded extension: %s", ext)
         except Exception as e:
-            logging.error(f"❌ Failed to load extension {ext}: {e}")
+            logging.exception("❌ Failed to load extension %s: %s", ext, e)
 
-    # 명령어 동기화
+    # 슬래시 명령어 동기화
     try:
-        synced = await bot.tree.sync()
-        logging.info(f"✅ {len(synced)} 개의 슬래시 명령어 동기화 완료")
+        if GUILD_ID:
+            guild = discord.Object(id=GUILD_ID)
+            synced = await bot.tree.sync(guild=guild)
+            logging.info("✅ %d 개의 슬래시 명령어 동기화 완료 (Guild)", len(synced))
+        else:
+            synced = await bot.tree.sync()
+            logging.info("✅ %d 개의 슬래시 명령어 동기화 완료 (Global)", len(synced))
     except Exception as e:
-        logging.error(f"명령어 동기화 실패: {e}")
+        logging.exception("❌ Slash command sync failed: %s", e)
 
-    # 상태 로테이션 시작
-    if not cycle_status.is_running():
-        cycle_status.start()
+@bot.event
+async def on_ready():
+    logging.info("🤖 Logged in as %s (%s)", bot.user, bot.user.id)
+    bot.loop.create_task(cycle_status())  # 상태 메시지 순환 시작
 
-# ---------------------------
-# 실행부
-# ---------------------------
+# ===== 실행부 =====
 if __name__ == "__main__":
-    keep_alive()
-    bot.run(os.environ["DISCORD_TOKEN"])
+    logging.basicConfig(level=logging.INFO)
+    threading.Thread(target=run_web, daemon=True).start()  # 웹 서버 실행
+    bot.run(TOKEN)
