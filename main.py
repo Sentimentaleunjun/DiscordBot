@@ -46,9 +46,9 @@ def run_web():
 
 # ===== 봇 상태 (Presence) =====
 STATUS_MESSAGES = [
-    "서버 관리 중",
+    "서버 관리",
     "GSEJ Company 서비스 운영",
-    "문의는 /support 로!"
+    "디스코드를 연구"
 ]
 
 async def cycle_status():
