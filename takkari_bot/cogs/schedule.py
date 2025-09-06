@@ -1,38 +1,19 @@
-﻿import discord
-from discord.ext import commands, tasks
-from datetime import datetime
+# -*- coding: utf-8 -*-
+import discord
+from discord.ext import commands
+import asyncio
 
-class Schedule(commands.Cog):
+class ScheduleCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.schedules = []
-        self.check_schedules.start()
 
-    @commands.command(name="schedule")
-    async def schedule(self, ctx, time: str, *, content: str):
-        if ctx.author.id != self.bot.admin_id:
-            await ctx.send("??愿由ъ옄留?媛?ν빀?덈떎.")
-            return
-
-        try:
-            when = datetime.strptime(time, "%Y-%m-%d %H:%M")
-        except ValueError:
-            await ctx.send("?좑툘 ?쒓컙 ?뺤떇? YYYY-MM-DD HH:MM")
-            return
-
-        self.schedules.append((when, content, ctx.channel.id))
-        await ctx.send(f"???덉빟?? {when} ??{content}")
-
-    @tasks.loop(seconds=30)
-    async def check_schedules(self):
-        now = datetime.now()
-        for sched in self.schedules[:]:
-            when, content, channel_id = sched
-            if now >= when:
-                channel = self.bot.get_channel(channel_id)
-                if channel:
-                    await channel.send(f"???덉빟 怨듭?: {content}")
-                self.schedules.remove(sched)
+    @commands.command(name="예약공지")
+    async def schedule(self, ctx, seconds: int, *, message: str):
+        """seconds초 후 예약 공지"""
+        await ctx.send(f"⏰ {seconds}초 후 공지가 발송됩니다!")
+        await asyncio.sleep(seconds)
+        embed = discord.Embed(title="📢 예약 공지", description=message, color=0x33ccff)
+        await ctx.send(embed=embed)
 
 async def setup(bot):
-    await bot.add_cog(Schedule(bot))
+    await bot.add_cog(ScheduleCog(bot))
