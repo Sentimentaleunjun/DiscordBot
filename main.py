@@ -27,6 +27,7 @@ EXTENSIONS = [
     "takkari_bot.cogs.userinfo",
 ]
 
+
 @bot.event
 async def setup_hook():
     # 코그 로드
