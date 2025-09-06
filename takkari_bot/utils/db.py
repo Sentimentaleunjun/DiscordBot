@@ -1,10 +1,13 @@
 # takkari_bot/utils/db.py
 # -*- coding: utf-8 -*-
+import os
 import sqlite3
 
-DB_PATH = "support.db"
+# DB 경로 (환경 변수 우선, 없으면 현재 utils 폴더에 support.db 생성)
+DB_PATH = os.getenv("DB_PATH", os.path.join(os.path.dirname(__file__), "support.db"))
 
 def init_db():
+    """DB 및 테이블 초기화"""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
@@ -19,18 +22,20 @@ def init_db():
     conn.close()
 
 def add_support(user_id: str, message: str):
-    """고객지원 요청을 DB에 저장"""
+    """고객지원 요청 저장"""
+    init_db()  # 테이블 없으면 생성
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT INTO support_requests (user_id, message) VALUES (?, ?)", (user_id, message))
+    conn.execute("INSERT INTO support_requests (user_id, message) VALUES (?, ?)", (user_id, message))
     conn.commit()
     conn.close()
 
 def get_supports():
-    """저장된 모든 고객지원 요청 불러오기"""
+    """모든 고객지원 요청 조회 (최신순)"""
+    init_db()
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT id, user_id, message, created_at FROM support_requests ORDER BY created_at DESC")
-    rows = c.fetchall()
+    conn.row_factory = sqlite3.Row  # dict처럼 접근 가능
+    rows = conn.execute(
+        "SELECT id, user_id, message, created_at FROM support_requests ORDER BY created_at DESC"
+    ).fetchall()
     conn.close()
-    return rows
+    return [dict(row) for row in rows]
