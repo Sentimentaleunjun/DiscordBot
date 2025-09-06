@@ -1,14 +1,15 @@
 import discord
-from discord import app_commands
 from discord.ext import commands
+from discord import app_commands
 
 class PatchNote(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.notes = ["v0.8 베타 시작!", "유저 정보 기능 추가"]
 
-    @app_commands.command(name="patchnote", description="패치노트를 확인합니다.")
+    @app_commands.command(name="patchnote", description="최근 패치노트를 확인합니다.")
     async def patchnote(self, interaction: discord.Interaction):
-        embed = discord.Embed(title="패치노트", description="최근 업데이트 내역 없음.", color=0x00ffcc)
+        embed = discord.Embed(title="📢 패치노트", description="\n".join(self.notes), color=discord.Color.purple())
         await interaction.response.send_message(embed=embed)
 
 async def setup(bot):
