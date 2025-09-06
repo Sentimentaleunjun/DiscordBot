@@ -1,24 +1,22 @@
 import discord
-from discord.ext import commands
 from discord import app_commands
+from discord.ext import commands
 
-class HelpCog(commands.Cog):
+class Help(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="help", description="사용 가능한 명령어 목록을 보여줍니다.")
-    async def help(self, interaction: discord.Interaction):
-        embed = discord.Embed(title="📌 명령어 목록", color=discord.Color.green())
-        embed.add_field(name="/userinfo [유저]", value="유저 정보 확인", inline=False)
-        embed.add_field(name="/loglookup [키워드]", value="현재 채널에서 채팅 로그 검색", inline=False)
-        embed.add_field(name="/schedule", value="일정 확인", inline=False)
-        embed.add_field(name="/addschedule [내용]", value="일정 추가", inline=False)
+    @app_commands.command(name="help", description="봇의 모든 명령어를 확인합니다.")
+    async def help_command(self, interaction: discord.Interaction):
+        embed = discord.Embed(title="📖 도움말", color=discord.Color.blue())
+        embed.add_field(name="/support", value="고객 지원 요청 남기기", inline=False)
+        embed.add_field(name="/supportlist", value="저장된 고객 지원 목록 보기", inline=False)
+        embed.add_field(name="/userinfo", value="유저 정보 확인", inline=False)
+        embed.add_field(name="/loglookup", value="로그 검색 기능", inline=False)
         embed.add_field(name="/patchnote", value="패치노트 확인", inline=False)
-        embed.add_field(name="/support [내용]", value="고객지원 요청 등록", inline=False)
-        embed.add_field(name="/supportlist", value="고객지원 요청 목록(관리자)", inline=False)
-        embed.add_field(name="/accordingtobot", value="따까리봇 설명", inline=False)
-        embed.add_field(name="/dblookup [키]", value="DB 조회", inline=False)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        embed.add_field(name="/schedule", value="일정 관리", inline=False)
+        embed.add_field(name="/announce", value="공지 전송 (관리자용)", inline=False)
+        await interaction.response.send_message(embed=embed)
 
 async def setup(bot):
-    await bot.add_cog(HelpCog(bot))
+    await bot.add_cog(Help(bot))
