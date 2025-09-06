@@ -14,7 +14,7 @@ intents = discord.Intents.default()
 intents.message_content = True  # DM 및 채팅 명령어 필요
 intents.members = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="/", intents=intents)
 
 # Flask 서버 (Render ping 유지용)
 app = Flask(__name__)
