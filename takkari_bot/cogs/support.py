@@ -1,15 +1,20 @@
-﻿import discord
+# -*- coding: utf-8 -*-
+import discord
 from discord.ext import commands
-from takkari_bot.utils.db import add_support
 
-class Support(commands.Cog):
+class SupportCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="support")
-    async def support(self, ctx, *, content: str):
-        add_support(str(ctx.author.id), content)
-        await ctx.send("?벃 臾몄쓽媛 ?묒닔?섏뿀?듬땲?? 愿由ъ옄媛 ?뺤씤 ???듬??쒕━寃좎뒿?덈떎.")
+    @commands.command(name="지원")
+    async def support(self, ctx, *, message: str):
+        """지원 메시지 남기기"""
+        embed = discord.Embed(
+            title="📩 고객지원",
+            description=message,
+            color=0x3399ff
+        )
+        await ctx.send(embed=embed)
 
 async def setup(bot):
-    await bot.add_cog(Support(bot))
+    await bot.add_cog(SupportCog(bot))
