@@ -1,3 +1,4 @@
+# userinfo.py
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -13,8 +14,9 @@ class UserInfo(commands.Cog):
         embed.add_field(name="이름", value=user.name, inline=True)
         embed.add_field(name="ID", value=user.id, inline=True)
         embed.add_field(name="계정 생성일", value=user.created_at.strftime("%Y-%m-%d %H:%M"), inline=False)
-        embed.set_thumbnail(url=user.avatar.url if user.avatar else None)
-        await interaction.response.send_message(embed=embed)
+        if user.avatar:
+            embed.set_thumbnail(url=user.avatar.url)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(UserInfo(bot))
