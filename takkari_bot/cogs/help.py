@@ -10,11 +10,14 @@ class HelpCog(commands.Cog):
     async def help(self, interaction: discord.Interaction):
         embed = discord.Embed(title="📌 명령어 목록", color=discord.Color.green())
         embed.add_field(name="/userinfo [유저]", value="유저 정보 확인", inline=False)
-        embed.add_field(name="/loglookup [내용]", value="로그 검색", inline=False)
-        embed.add_field(name="/schedule", value="예약 확인/추가", inline=False)
+        embed.add_field(name="/loglookup [키워드]", value="현재 채널에서 채팅 로그 검색", inline=False)
+        embed.add_field(name="/schedule", value="일정 확인", inline=False)
+        embed.add_field(name="/addschedule [내용]", value="일정 추가", inline=False)
         embed.add_field(name="/patchnote", value="패치노트 확인", inline=False)
         embed.add_field(name="/support [내용]", value="고객지원 요청 등록", inline=False)
+        embed.add_field(name="/supportlist", value="고객지원 요청 목록(관리자)", inline=False)
         embed.add_field(name="/accordingtobot", value="따까리봇 설명", inline=False)
+        embed.add_field(name="/dblookup [키]", value="DB 조회", inline=False)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(bot):
