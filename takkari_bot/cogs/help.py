@@ -37,7 +37,7 @@ class CustomHelp(commands.Cog):
         embed.add_field(
             name="⚙️ 기타",
             value="/userinfo @유저\n"
-                  "/dm @유저 <메시지> (관리자)",
+                  "/dm @유저 <메시지> (모든 유저 가능)",
             inline=False
         )
         embed.add_field(
