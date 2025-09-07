@@ -32,7 +32,7 @@ def run_web():
 async def on_ready():
     logger.info(f"✅ 로그인 성공: {bot.user} (ID: {bot.user.id})")
     await bot.change_presence(
-        activity=discord.Game(name="2.0 출시 준비🎉")
+        activity=discord.Game(name="🎉따까리봇 2.0 출시 준비")
     )
 
 async def load_cogs():
