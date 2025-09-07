@@ -13,19 +13,43 @@ def execute(query, params=(), fetch=False, commit=False):
     conn.close()
     return result
 
+# ---------- DB 초기화 ----------
+def init_db():
+    execute("""
+    CREATE TABLE IF NOT EXISTS dm_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender_id INTEGER NOT NULL,
+        receiver_id INTEGER NOT NULL,
+        message TEXT NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """, commit=True)
+
+    execute("""
+    CREATE TABLE IF NOT EXISTS support (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        message TEXT NOT NULL,
+        status TEXT DEFAULT 'open',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        closed_at DATETIME
+    )
+    """, commit=True)
+
+    execute("""
+    CREATE TABLE IF NOT EXISTS schedules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        content TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """, commit=True)
+
 # ---------- DM ----------
 def add_dm(sender_id, receiver_id, message):
     execute(
         "INSERT INTO dm_logs (sender_id, receiver_id, message) VALUES (?, ?, ?)",
         (sender_id, receiver_id, message),
         commit=True
-    )
-
-def get_dm_logs(user_id, limit=10):
-    return execute(
-        "SELECT sender_id, receiver_id, message, timestamp FROM dm_logs WHERE sender_id=? OR receiver_id=? ORDER BY timestamp DESC LIMIT ?",
-        (user_id, user_id, limit),
-        fetch=True
     )
 
 # ---------- Support ----------
@@ -67,34 +91,3 @@ def get_schedules():
 
 def remove_schedule(schedule_id):
     execute("DELETE FROM schedules WHERE id=?", (schedule_id,), commit=True)
-
-# ---------- DB 초기화 ----------
-def init_db():
-    execute("""
-    CREATE TABLE IF NOT EXISTS dm_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        sender_id INTEGER NOT NULL,
-        receiver_id INTEGER NOT NULL,
-        message TEXT NOT NULL,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-    """, commit=True)
-
-    execute("""
-    CREATE TABLE IF NOT EXISTS support (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        message TEXT NOT NULL,
-        status TEXT DEFAULT 'open',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        closed_at DATETIME
-    )
-    """, commit=True)
-
-    execute("""
-    CREATE TABLE IF NOT EXISTS schedules (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        content TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-    """, commit=True)
