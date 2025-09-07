@@ -1,43 +1,100 @@
 import sqlite3
 from datetime import datetime
 
-DB_PATH = "support.db"
+DB_PATH = "shared/user.db"
 
-def connect():
-    return sqlite3.connect(DB_PATH)
-
-def init_db():
-    with connect() as conn:
-        cur = conn.cursor()
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS supports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT,
-            message TEXT,
-            status TEXT DEFAULT 'open',
-            created_at TEXT
-        )
-        """)
+def execute(query, params=(), fetch=False, commit=False):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(query, params)
+    result = c.fetchall() if fetch else None
+    if commit:
         conn.commit()
+    conn.close()
+    return result
 
+# ---------- DM ----------
+def add_dm(sender_id, receiver_id, message):
+    execute(
+        "INSERT INTO dm_logs (sender_id, receiver_id, message) VALUES (?, ?, ?)",
+        (sender_id, receiver_id, message),
+        commit=True
+    )
+
+def get_dm_logs(user_id, limit=10):
+    return execute(
+        "SELECT sender_id, receiver_id, message, timestamp FROM dm_logs WHERE sender_id=? OR receiver_id=? ORDER BY timestamp DESC LIMIT ?",
+        (user_id, user_id, limit),
+        fetch=True
+    )
+
+# ---------- Support ----------
 def add_support(user_id, message):
-    with connect() as conn:
-        cur = conn.cursor()
-        cur.execute("""
-        INSERT INTO supports (user_id, message, status, created_at)
-        VALUES (?, ?, 'open', ?)
-        """, (user_id, message, datetime.utcnow().isoformat()))
-        conn.commit()
+    execute(
+        "INSERT INTO support (user_id, message) VALUES (?, ?)",
+        (user_id, message),
+        commit=True
+    )
 
 def get_supports():
-    with connect() as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT id, user_id, message, status, created_at FROM supports ORDER BY id DESC")
-        return cur.fetchall()
+    return execute(
+        "SELECT id, user_id, message, status, created_at FROM support",
+        fetch=True
+    )
 
 def close_support(support_id):
-    with connect() as conn:
-        cur = conn.cursor()
-        cur.execute("UPDATE supports SET status = 'closed' WHERE id = ?", (support_id,))
-        conn.commit()
-        return cur.rowcount > 0
+    row = execute(
+        "SELECT user_id FROM support WHERE id=? AND status='open'",
+        (support_id,),
+        fetch=True
+    )
+    if not row:
+        return None
+    user_id = row[0][0]
+    execute(
+        "UPDATE support SET status='closed', closed_at=? WHERE id=?",
+        (datetime.now(), support_id),
+        commit=True
+    )
+    return user_id
+
+# ---------- Schedule ----------
+def add_schedule(content):
+    execute("INSERT INTO schedules (content) VALUES (?)", (content,), commit=True)
+
+def get_schedules():
+    return execute("SELECT id, content, created_at FROM schedules", fetch=True)
+
+def remove_schedule(schedule_id):
+    execute("DELETE FROM schedules WHERE id=?", (schedule_id,), commit=True)
+
+# ---------- DB 초기화 ----------
+def init_db():
+    execute("""
+    CREATE TABLE IF NOT EXISTS dm_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender_id INTEGER NOT NULL,
+        receiver_id INTEGER NOT NULL,
+        message TEXT NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """, commit=True)
+
+    execute("""
+    CREATE TABLE IF NOT EXISTS support (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        message TEXT NOT NULL,
+        status TEXT DEFAULT 'open',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        closed_at DATETIME
+    )
+    """, commit=True)
+
+    execute("""
+    CREATE TABLE IF NOT EXISTS schedules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        content TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """, commit=True)
