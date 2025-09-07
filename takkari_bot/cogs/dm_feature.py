@@ -1,41 +1,21 @@
 import discord
 from discord.ext import commands
-from discord import app_commands
+from takkari_bot.utils import db
 
 class DMFeature(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.bot = bot
 
-    @app_commands.command(
-        name="dm",
-        description="특정 유저에게 DM을 보냅니다."
-    )
-    async def send_dm(
-        self,
-        interaction: discord.Interaction,
-        user: discord.User,
-        message: str
-    ):
-        """누구나 DM을 보낼 수 있는 기능"""
-
+    @commands.command(name="dm")
+    async def send_dm(self, ctx, user: discord.User, *, message: str):
+        """모든 유저가 사용 가능, DM 전송"""
         try:
-            # 보낸 사람 이름/태그
-            sender = f"{interaction.user.name}#{interaction.user.discriminator}"
-
-            # DM 내용 (보낸사람 정보 포함)
-            content = f"✉️ {sender} 님이 보낸 메시지:\n\n{message}"
-
-            await user.send(content)
-            await interaction.response.send_message(
-                f"✅ {user.mention} 님에게 DM을 보냈습니다.",
-                ephemeral=True
-            )
-
+            await user.send(f"**{ctx.author}** 가 보낸 메시지:\n{message}")
+            await ctx.send(f"✅ {user} 님에게 DM을 보냈습니다.", ephemeral=True)
+            db.add_dm(ctx.author.id, user.id, message)
         except discord.Forbidden:
-            await interaction.response.send_message(
-                "❌ DM을 보낼 수 없습니다 (상대방이 차단했거나 DM 차단 설정).",
-                ephemeral=True
-            )
+            await ctx.send("❌ DM을 보낼 수 없습니다 (차단 또는 닫힘).")
 
 async def setup(bot):
     await bot.add_cog(DMFeature(bot))
