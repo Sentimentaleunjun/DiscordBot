@@ -1,6 +1,6 @@
 import discord
-from discord import app_commands
 from discord.ext import commands
+from discord import app_commands
 
 class CustomHelp(commands.Cog):
     def __init__(self, bot):
@@ -15,7 +15,6 @@ class CustomHelp(commands.Cog):
             color=discord.Color.blurple()
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
-
         embed.add_field(
             name="📅 스케줄",
             value="/addschedule (관리자 전용) → 서버 전체 일정 등록\n"
@@ -56,7 +55,6 @@ class CustomHelp(commands.Cog):
             inline=False
         )
         embed.set_footer(text="Edited by Flow in GSEJ")
-
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(bot):
