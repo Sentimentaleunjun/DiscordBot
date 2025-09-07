@@ -27,14 +27,21 @@ class Support(commands.Cog):
         if not rows:
             await interaction.response.send_message("📭 문의가 없습니다.", ephemeral=True)
             return
+
         embed = discord.Embed(title="📋 문의 리스트", color=discord.Color.green())
         for r in rows:
             status = "🟢 열림" if r[3] == "open" else "🔴 닫힘"
+            try:
+                user = await self.bot.fetch_user(int(r[1]))
+                name = f"{user.name}#{user.discriminator}"
+            except:
+                name = r[1]
             embed.add_field(
-                name=f"ID {r[0]} - User {r[1]} [{status}]",
+                name=f"ID {r[0]} - {name} [{status}]",
                 value=f"{r[2]} ({r[4]})",
                 inline=False
             )
+
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @app_commands.command(name="supportclose", description="문의 닫기 (개발자 전용)")
@@ -46,12 +53,13 @@ class Support(commands.Cog):
         if not user_id:
             await interaction.response.send_message("⚠️ 문의를 찾을 수 없거나 이미 닫힘", ephemeral=True)
             return
-        # 닫힘 알림을 문의 등록자에게 DM 전송
+
         user = await self.bot.fetch_user(int(user_id))
         try:
             await user.send(f"✅ 문의 ID {support_id}가 닫혔습니다.")
         except discord.Forbidden:
             pass
+
         await interaction.response.send_message(f"✅ ID {support_id} 문의가 닫혔습니다.", ephemeral=True)
 
 async def setup(bot):
