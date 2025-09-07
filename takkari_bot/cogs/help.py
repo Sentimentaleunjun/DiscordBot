@@ -18,8 +18,9 @@ class CustomHelp(commands.Cog):
 
         embed.add_field(
             name="📅 스케줄",
-            value="/addschedule (관리자 전용기능) → 서버 전체 일정 등록\n"
-                  "/schedule → 일정 확인",
+            value="/addschedule (관리자 전용) → 서버 전체 일정 등록\n"
+                  "/schedule → 일정 확인\n"
+                  "/removeschedule (관리자 전용) → 일정 삭제",
             inline=False
         )
         embed.add_field(
@@ -31,13 +32,22 @@ class CustomHelp(commands.Cog):
         embed.add_field(
             name="📨 고객 지원",
             value="/support → 문의 등록\n"
-                  "/supportlist (개발자 전용 기능)",
+                  "/supportlist (개발자 전용 기능)\n"
+                  "/supportclose (개발자 전용 기능)",
             inline=False
         )
         embed.add_field(
             name="⚙️ 기타",
             value="/userinfo @유저\n"
                   "/dm @유저 <메시지> (모든 유저 가능)",
+            inline=False
+        )
+        embed.add_field(
+            name="🎮 재미 기능",
+            value="/rps → 가위바위보 게임\n"
+                  "/quiz → 퀴즈\n"
+                  "/roll → 주사위 굴리기\n"
+                  "/points → 포인트 확인",
             inline=False
         )
         embed.add_field(
