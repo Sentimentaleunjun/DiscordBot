@@ -11,9 +11,13 @@ class Support(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="support", description="따까리봇 개발자에게 문의/피드백을 보냅니다.")
-    async def support(self, interaction: discord.Interaction, message: str):
-        # db.add_support(str(interaction.user.id), message)
-await interaction.response.send_message("✅ 문의가 등록되었습니다!", ephemeral=True)
+async def support(self, interaction: discord.Interaction, message: str):
+    try:
+        db.add_support(str(interaction.user.id), message)
+        await interaction.response.send_message("✅ 문의가 등록되었습니다!", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"⚠️ 오류 발생: {e}", ephemeral=True)
+
 
 
     @app_commands.command(name="supportlist", description="등록된 문의 목록을 확인 (개발자 전용)")
