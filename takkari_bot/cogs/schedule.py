@@ -6,7 +6,6 @@ from takkari_bot.utils import db
 class Schedule(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot = bot
 
     @app_commands.command(name="schedule", description="등록된 일정 확인")
     async def schedule(self, interaction: discord.Interaction):
