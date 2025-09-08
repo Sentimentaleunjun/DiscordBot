@@ -1,62 +1,81 @@
+# takkari_bot/cogs/support.py
 import discord
 from discord import app_commands
 from discord.ext import commands
 from takkari_bot.utils import db
 
-DEVELOPER_ID = 909360134566862878
+DEVELOPER_ID = 909360134566862878  # 은준님 ID
 
 class Support(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
-        db.init_support_table()
 
-    @app_commands.command(name="support", description="문의/피드백 등록")
+    @app_commands.command(name="support", description="따까리봇 개발자에게 문의/피드백을 보냅니다.")
     async def support(self, interaction: discord.Interaction, message: str):
         try:
             db.add_support(str(interaction.user.id), message)
             await interaction.response.send_message("✅ 문의가 등록되었습니다!", ephemeral=True)
-            # DM으로 개발자에게 전달
+            # DM으로 개발자에게도 알림
+            user_tag = f"{interaction.user.name}#{interaction.user.discriminator}"
+            dm_message = f"📩 새 문의 등록!\n보낸 사람: {user_tag}\n내용: {message}"
             dev = await self.bot.fetch_user(DEVELOPER_ID)
-            await dev.send(f"📩 문의 등록됨\n{interaction.user} : {message}")
+            if dev:
+                await dev.send(dm_message)
         except Exception as e:
             await interaction.response.send_message(f"⚠️ 오류 발생: {e}", ephemeral=True)
 
-    @app_commands.command(name="supportlist", description="등록된 문의 목록 확인 (개발자 전용)")
+    @app_commands.command(name="supportlist", description="등록된 문의 목록을 확인 (개발자 전용)")
     async def supportlist(self, interaction: discord.Interaction):
         if interaction.user.id != DEVELOPER_ID:
-            await interaction.response.send_message("❌ 개발자 전용 명령어입니다.", ephemeral=True)
+            await interaction.response.send_message("❌ 이 명령어는 개발자 전용입니다.", ephemeral=True)
             return
+
         rows = db.get_supports()
         if not rows:
-            await interaction.response.send_message("📭 등록된 문의가 없습니다.", ephemeral=True)
+            await interaction.response.send_message("📭 아직 등록된 문의가 없습니다.", ephemeral=True)
             return
-        embed = discord.Embed(title="📋 문의 목록", color=discord.Color.green())
+
+        embed = discord.Embed(title="📋 따까리봇 문의 리스트", color=discord.Color.green())
         for r in rows:
-            status = "🟢 열림" if r[3]=="open" else "🔴 닫힘"
-            user = await self.bot.fetch_user(int(r[1]))
+            status = "🟢 열림" if r[3] == "open" else "🔴 닫힘"
+            user_tag = "알 수 없음"
+            try:
+                user_obj = await self.bot.fetch_user(int(r[1]))
+                user_tag = f"{user_obj.name}#{user_obj.discriminator}"
+            except:
+                pass
             embed.add_field(
-                name=f"ID {r[0]} - {user} [{status}]",
+                name=f"ID {r[0]} - {user_tag} [{status}]",
                 value=f"{r[2]} ({r[4]})",
                 inline=False
             )
+
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.command(name="supportclose", description="문의 닫기 (개발자 전용)")
+    @app_commands.command(name="supportclose", description="특정 문의를 닫습니다 (개발자 전용)")
     async def supportclose(self, interaction: discord.Interaction, support_id: int):
         if interaction.user.id != DEVELOPER_ID:
-            await interaction.response.send_message("❌ 개발자 전용 명령어입니다.", ephemeral=True)
+            await interaction.response.send_message("❌ 이 명령어는 개발자 전용입니다.", ephemeral=True)
             return
-        rows = db.execute("SELECT user_id FROM support WHERE id=?", (support_id,), fetch=True)
-        if not rows:
-            await interaction.response.send_message("❌ 해당 문의를 찾을 수 없습니다.", ephemeral=True)
-            return
+
         success = db.close_support(support_id)
         if success:
-            user = await self.bot.fetch_user(int(rows[0][0]))
-            await user.send(f"✅ 당신의 문의(ID:{support_id})가 해결되었습니다.")
-            await interaction.response.send_message(f"✅ 문의 {support_id} 닫힘", ephemeral=True)
+            # 문의 작성자에게 상태 알림
+            rows = db.get_supports()
+            user_id = None
+            for r in rows:
+                if r[0] == support_id:
+                    user_id = r[1]
+                    break
+            if user_id:
+                try:
+                    user_obj = await self.bot.fetch_user(int(user_id))
+                    await user_obj.send(f"✅ 문의 ID {support_id}가 처리 완료되었습니다.")
+                except:
+                    pass
+            await interaction.response.send_message(f"✅ ID {support_id} 문의가 닫혔습니다.", ephemeral=True)
         else:
-            await interaction.response.send_message(f"⚠️ 문의 {support_id} 이미 닫혀있음", ephemeral=True)
+            await interaction.response.send_message(f"⚠️ ID {support_id} 문의를 찾을 수 없습니다.", ephemeral=True)
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(Support(bot))
