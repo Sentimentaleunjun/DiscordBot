@@ -6,18 +6,18 @@ import logging
 from flask import Flask
 from threading import Thread
 
-# -------------------- 로그 설정 --------------------
+# ------------------ 로그 설정 ------------------
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# -------------------- Discord 봇 설정 --------------------
+# ------------------ Discord 봇 intents ------------------
 intents = discord.Intents.default()
-intents.message_content = True  # 메시지 내용 접근 필요
-intents.members = True          # 멤버 관련 이벤트 필요
+intents.message_content = True  # DM 및 채팅 명령어 필요
+intents.members = True
 
-bot = commands.Bot(command_prefix="/", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)
 
-# -------------------- Flask 서버 --------------------
+# ------------------ Flask 서버 (Render ping 유지용) ------------------
 app = Flask(__name__)
 
 @app.route("/")
@@ -27,7 +27,13 @@ def home():
 def run_web():
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
 
-# -------------------- Cog 자동 로딩 --------------------
+# ------------------ 이벤트: 봇 준비 완료 ------------------
+@bot.event
+async def on_ready():
+    logger.info(f"✅ 로그인 성공: {bot.user} (ID: {bot.user.id})")
+    await bot.change_presence(activity=discord.Game(name="🎉 1.0 출시 준비"))
+
+# ------------------ Cog 로드 함수 ------------------
 async def load_cogs():
     extensions = [
         "takkari_bot.cogs.help",
@@ -39,8 +45,8 @@ async def load_cogs():
         "takkari_bot.cogs.loglookup",
         "takkari_bot.cogs.dm_feature",
         "takkari_bot.cogs.accordingtobot",
-        "takkari_bot.cogs.announce"
     ]
+
     for ext in extensions:
         try:
             await bot.load_extension(ext)
@@ -48,31 +54,25 @@ async def load_cogs():
         except Exception as e:
             logger.error(f"❌ Failed to load extension {ext}: {e}")
 
-# -------------------- 봇 이벤트 --------------------
-@bot.event
-async def on_ready():
-    logger.info(f"✅ 로그인 성공: {bot.user} (ID: {bot.user.id})")
-    await bot.change_presence(activity=discord.Game(name="2.0 출시 준비🎉"))
-
+# ------------------ setup_hook (슬래시 명령어 동기화) ------------------
 @bot.event
 async def setup_hook():
-    # 기본 help 제거
+    # 기본 help 명령어 제거 (충돌 방지)
     bot.remove_command("help")
-    # Cog 로드
     await load_cogs()
-    # 슬래시 명령어 동기화 (Global)
+
     synced = await bot.tree.sync()
     logger.info(f"✅ {len(synced)} 개의 슬래시 명령어 동기화 완료 (Global)")
 
-# -------------------- 봇 실행 --------------------
+# ------------------ 메인 실행 ------------------
 if __name__ == "__main__":
-    # Flask 서버 별 Thread로 실행
+    # Flask 웹 서버 실행
     t = Thread(target=run_web)
     t.start()
 
     TOKEN = os.getenv("DISCORD_TOKEN")
     if not TOKEN:
-        logger.error("❌ DISCORD_TOKEN 환경변수가 설정되지 않았습니다.")
+        logger.error("❌ DISCORD_TOKEN 환경변수가 설정되지 않았습니다!")
         exit(1)
 
     bot.run(TOKEN)
