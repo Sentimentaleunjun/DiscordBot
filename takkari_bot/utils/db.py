@@ -2,7 +2,6 @@ import sqlite3
 import threading
 
 DB_PATH = "shared/user.db"  # DB 경로
-
 _lock = threading.Lock()
 
 # ---------------- 기본 DB 실행 함수 ----------------
@@ -82,3 +81,10 @@ def add_quiz(question, answer):
 def get_random_quiz():
     res = execute("SELECT id, question, answer FROM quiz ORDER BY RANDOM() LIMIT 1", fetch=True)
     return res[0] if res else None
+
+# ---------------- 초기화 ----------------
+def init_db():
+    """모든 테이블 초기화"""
+    init_support_table()
+    init_points_table()
+    init_quiz_table()
