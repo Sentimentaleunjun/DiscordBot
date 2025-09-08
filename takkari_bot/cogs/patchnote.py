@@ -10,6 +10,8 @@ class PatchNote(commands.Cog):
             "📢 따까리봇 0.9 Candidate Ver. 출시!",
             "✨ 주요 기능 업데이트",
             "🚀 공식 출시 임박, 베타테스트 시작!"
+            "0.9.5 Codename : DePLayer (Final Beta) 개발 시작"
+            "✨ 곧 1.0 으로 다시올게요!"
         ]
 
     @app_commands.command(name="patchnote", description="최근 패치노트를 확인합니다.")
