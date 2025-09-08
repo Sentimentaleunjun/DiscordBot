@@ -1,64 +1,64 @@
+# main.py
+import os
+import logging
+import asyncio
 import discord
 from discord.ext import commands
-import logging
 from flask import Flask
-from threading import Thread
-import os
-from takkari_bot.utils.db import init_db
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-intents = discord.Intents.default()
-intents.message_content = True
-intents.members = True
-
-bot = commands.Bot(command_prefix="!", intents=intents)
-
-# ---------- Flask 서버 ----------
+# -----------------------------
+# Flask 서버 설정
+# -----------------------------
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Bot is running!"
+    return "TakkariBot is running! ✅"
 
-def run_web():
-    app.run(host="0.0.0.0", port=10000)
+# -----------------------------
+# Discord 봇 설정
+# -----------------------------
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# ---------- Cog 로딩 ----------
+intents = discord.Intents.default()
+intents.messages = True
+intents.guilds = True
+intents.members = True
+
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# cogs 자동 로딩
 async def load_cogs():
-    extensions = [
-        "takkari_bot.cogs.help",
-        "takkari_bot.cogs.schedule",
-        "takkari_bot.cogs.patchnote",
-        "takkari_bot.cogs.support",
-        "takkari_bot.cogs.userinfo",
-        "takkari_bot.cogs.db_lookup",
-        "takkari_bot.cogs.loglookup",
-        "takkari_bot.cogs.dm_feature",
-        "takkari_bot.cogs.accordingtobot",
-    ]
-    for ext in extensions:
-        try:
-            await bot.load_extension(ext)
-            logger.info(f"✅ Loaded extension: {ext}")
-        except Exception as e:
-            logger.error(f"❌ Failed to load extension {ext}: {e}")
+    for filename in os.listdir("takkari_bot/cogs"):
+        if filename.endswith(".py") and not filename.startswith("__"):
+            extension = f"takkari_bot.cogs.{filename[:-3]}"
+            try:
+                await bot.load_extension(extension)
+                logger.info(f"✅ Loaded extension: {extension}")
+            except Exception as e:
+                logger.error(f"❌ Failed to load extension {extension}: {e}")
 
 @bot.event
 async def on_ready():
-    logger.info(f"✅ 로그인 성공: {bot.user} (ID: {bot.user.id})")
-    await bot.change_presence(activity=discord.Game(name="따까리봇 2.0 준비"))
+    await bot.tree.sync()  # 슬래시 명령어 동기화
+    logger.info(f"🤖 Logged in as {bot.user}")
+    logger.info(f"✅ {len(bot.tree.get_commands())} 개의 슬래시 명령어 동기화 완료")
 
-@bot.event
-async def setup_hook():
-    bot.remove_command("help")
-    init_db()        # DB 초기화
-    await load_cogs()
-    synced = await bot.tree.sync()
-    logger.info(f"✅ {len(synced)} 개의 슬래시 명령어 동기화 완료 (Global)")
+# -----------------------------
+# 실행부
+# -----------------------------
+async def main():
+    async with bot:
+        await load_cogs()
+        await bot.start(os.getenv("DISCORD_TOKEN"))
 
 if __name__ == "__main__":
-    Thread(target=run_web).start()
-    TOKEN = os.getenv("DISCORD_TOKEN")
-    bot.run(TOKEN)
+    # Flask는 별도 쓰레드에서 실행
+    from threading import Thread
+
+    port = int(os.environ.get("PORT", 5000))  # Render는 기본적으로 $PORT 환경변수를 씀
+    Thread(target=lambda: app.run(host="0.0.0.0", port=port)).start()
+
+    # Discord 봇 실행
+    asyncio.run(main())
