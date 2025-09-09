@@ -1,72 +1,80 @@
+import discord
+from discord.ext import commands
+from discord import app_commands
 import os
 import logging
 from flask import Flask
 from threading import Thread
+import asyncio
 
-import discord
-from discord.ext import commands
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-from takkari_bot.utils import logging_config
-from takkari_bot.utils.db import init_support_table, init_points_table, init_quiz_table
+# 봇 intents
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
 
-# -------------------- Flask --------------------
+bot = commands.Bot(command_prefix="/", intents=intents)
+
+# Flask 서버
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "이 웹사이트는 따까리봇 실행 백팅업 사이트입니다"
+    return "Bot is running!"
 
-def run_flask():
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
-
-# -------------------- Discord --------------------
-intents = discord.Intents.default()
-intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
-
-COGS = [
-    "takkari_bot.cogs.accordingtobot",
-    "takkari_bot.cogs.db_lookup",
-    "takkari_bot.cogs.dm_feature",
-    "takkari_bot.cogs.help",
-    "takkari_bot.cogs.loglookup",
-    "takkari_bot.cogs.patchnote",
-    "takkari_bot.cogs.schedule",
-    "takkari_bot.cogs.support",
-    "takkari_bot.cogs.userinfo",
-    "takkari_bot.cogs.fun",
-]
+def run_web():
+    app.run(host="0.0.0.0", port=10000)
 
 @bot.event
 async def on_ready():
-    logging.info(f"✅ {bot.user} is connected and running!")
-    try:
-        synced = await bot.tree.sync()
-        logging.info(f"✅ {len(synced)} 개의 슬래시 명령어 동기화 완료 (Global)")
-    except Exception as e:
-        logging.error(f"❌ 슬래시 명령어 동기화 실패: {e}")
+    logger.info(f"✅ 로그인 성공: {bot.user} (ID: {bot.user.id})")
 
-def main():
-    # DB 초기화
-    init_support_table()
-    init_points_table()
-    init_quiz_table()
+    # 서버 수 기반 상태 메시지
+    async def cycle_status():
+        statuses = [
+            f"{len(bot.guilds)}개의 서버 관리중🔥",
+            "정식출시 준비중🚀",
+            "🤖 AI로 코딩중"
+        ]
+        while True:
+            for status in statuses:
+                await bot.change_presence(activity=discord.Game(name=status))
+                await asyncio.sleep(10)
 
-    # Flask 실행
-    Thread(target=run_flask).start()
+    bot.loop.create_task(cycle_status())
 
-    # Discord 실행
-    for cog in COGS:
+# Cog 로드
+async def load_cogs():
+    extensions = [
+        "takkari_bot.cogs.help",
+        "takkari_bot.cogs.schedule",
+        "takkari_bot.cogs.patchnote",
+        "takkari_bot.cogs.support",
+        "takkari_bot.cogs.userinfo",
+        "takkari_bot.cogs.db_lookup",
+        "takkari_bot.cogs.loglookup",
+        "takkari_bot.cogs.dm_feature",
+        "takkari_bot.cogs.accordingtobot",
+        "takkari_bot.cogs.fun"
+    ]
+
+    for ext in extensions:
         try:
-            bot.load_extension(cog)
-            logging.info(f"✅ Loaded extension: {cog}")
+            await bot.load_extension(ext)
+            logger.info(f"✅ Loaded extension: {ext}")
         except Exception as e:
-            logging.error(f"❌ Failed to load extension {cog}: {e}")
+            logger.error(f"❌ Failed to load extension {ext}: {e}")
 
-    token = os.getenv("DISCORD_TOKEN")
-    if not token:
-        raise RuntimeError("❌ DISCORD_TOKEN 환경 변수가 설정되지 않았습니다.")
-    bot.run(token)
+@bot.event
+async def setup_hook():
+    bot.remove_command("help")
+    await load_cogs()
+    synced = await bot.tree.sync()
+    logger.info(f"✅ {len(synced)} 개의 슬래시 명령어 동기화 완료 (Global)")
 
 if __name__ == "__main__":
-    main()
+    Thread(target=run_web).start()
+    TOKEN = os.getenv("DISCORD_TOKEN")
+    bot.run(TOKEN)
