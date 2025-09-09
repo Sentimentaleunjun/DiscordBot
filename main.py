@@ -1,83 +1,57 @@
+# main.py
 import discord
 from discord.ext import commands, tasks
-import os
-import logging
-from flask import Flask
-from threading import Thread
+from itertools import cycle
+from takkari_bot.cogs import db  # DB 모듈
 
-# 로그 설정
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Discord 봇 intents
-intents = discord.Intents.all()
+intents = discord.Intents.default()
+intents.members = True
 bot = commands.Bot(command_prefix="/", intents=intents)
 
-# Flask 서버 (Render ping 유지용)
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "Bot is running!"
-
-def run_web():
-    app.run(host="0.0.0.0", port=10000)
-
-# 상태 메시지 순환
-status_templates = [
-    "현재{len(bot.guilds)}개의 서버 관리중🔥",
+# 상태 메시지 초기화 (첫 번째 메시지는 서버 수를 나중에 업데이트)
+status_messages = [
+    "",  # 서버 수가 들어갈 자리
     "정식출시 준비중🚀",
-    "🤖 AI로 코딩중"
+    "🤖AI로 코딩중"
 ]
-current_index = 0
+status_cycle = None  # cycle 객체는 on_ready에서 생성
 
-@tasks.loop(seconds=10)
-async def update_status():
-    global current_index
-    guild_count = len(bot.guilds)
-    status_message = status_templates[current_index].format(guild_count)
-    await bot.change_presence(activity=discord.Game(name=status_message))
-    current_index = (current_index + 1) % len(status_templates)
-
-# 이벤트: 봇 준비 완료
 @bot.event
 async def on_ready():
-    logger.info(f"✅ 로그인 성공: {bot.user} (ID: {bot.user.id})")
-    update_status.start()
+    global status_cycle
+    print(f"✅ Bot logged in as {bot.user}!")
+    
+    # 서버 수를 첫 번째 메시지에 반영
+    status_messages[0] = f"{len(bot.guilds)}개의 서버 관리중 🔥"
+    status_cycle = cycle(status_messages)
 
-async def load_cogs():
-    extensions = [
-        "takkari_bot.cogs.help",
-        "takkari_bot.cogs.schedule",
-        "takkari_bot.cogs.patchnote",
-        "takkari_bot.cogs.support",
-        "takkari_bot.cogs.userinfo",
-        "takkari_bot.cogs.db_lookup",
-        "takkari_bot.cogs.loglookup",
-        "takkari_bot.cogs.dm_feature",
-        "takkari_bot.cogs.accordingtobot",
-        "takkari_bot.cogs.fun"  # 새로 추가되는 fun.py
-    ]
+    change_status.start()
+    
+    # 슬래시 커맨드 동기화
+    await bot.tree.sync()
+    print(f"✅ 현재 {len(bot.guilds)}개의 서버에서 활동 중!")
 
-    for ext in extensions:
-        try:
-            await bot.load_extension(ext)
-            logger.info(f"✅ Loaded extension: {ext}")
-        except Exception as e:
-            logger.error(f"❌ Failed to load extension {ext}: {e}")
+# 상태 메시지 변경
+@tasks.loop(seconds=10)
+async def change_status():
+    await bot.change_presence(activity=discord.Game(next(status_cycle)))
 
-@bot.event
-async def setup_hook():
-    # 기본 help 명령어 제거 (슬래시 명령어 전용)
-    bot.remove_command("help")
-    await load_cogs()
-    synced = await bot.tree.sync()
-    logger.info(f"✅ {len(synced)} 개의 슬래시 명령어 동기화 완료 (Global)")
+# ---------------- Cog 로딩 ----------------
+initial_extensions = [
+    "takkari_bot.cogs.help",
+    "takkari_bot.cogs.schedule",
+    "takkari_bot.cogs.patchnote",
+    "takkari_bot.cogs.support",
+    "takkari_bot.cogs.userinfo",
+    "takkari_bot.cogs.db_lookup",
+    "takkari_bot.cogs.loglookup",
+    "takkari_bot.cogs.dm_feature",
+    "takkari_bot.cogs.accordingtobot",
+    "takkari_bot.cogs.fun"
+]
 
 if __name__ == "__main__":
-    # Render에서 Flask 웹 서버 실행
-    t = Thread(target=run_web)
-    t.start()
+    for ext in initial_extensions:
+        bot.load_extension(ext)
 
-    TOKEN = os.getenv("DISCORD_TOKEN")
-    bot.run(TOKEN)
+    bot.run("YOUR_BOT_TOKEN")
