@@ -2,7 +2,7 @@
 import discord
 from discord.ext import commands, tasks
 from itertools import cycle
-from takkari_bot.cogs import db  # DB 모듈
+from takkari_bot.utils import db
 
 intents = discord.Intents.default()
 intents.members = True
