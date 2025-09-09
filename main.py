@@ -8,14 +8,14 @@ intents = discord.Intents.default()
 intents.message_content = True  # 메시지 컨텐츠 인텐트 허용
 
 # ===== 봇 설정 =====
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="/", intents=intents)
 
 # ===== 확장(코그) 목록 =====
 extensions = [
     "takkari_bot.cogs.help",     # 헬프
     "takkari_bot.cogs.fun",      # 재미 기능 (rps, etc)
     "takkari_bot.cogs.admin",    # 관리자 기능
-    # "takkari_bot.cogs.db",     # DB 기능 (필요하면 켜기)
+    "takkari_bot.cogs.db",     # DB 기능 (필요하면 켜기)
 ]
 
 # ===== 이벤트 =====
