@@ -1,78 +1,50 @@
-# main.py
+import os
 import discord
 from discord.ext import commands
-import os
-import logging
-from flask import Flask
-from threading import Thread
+from dotenv import load_dotenv
 
-# ------------------ 로그 설정 ------------------
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+load_dotenv()
 
-# ------------------ Discord 봇 intents ------------------
+TOKEN = os.getenv("DISCORD_TOKEN")
+
 intents = discord.Intents.default()
-intents.message_content = True  # DM 및 채팅 명령어 필요
+intents.message_content = True
 intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ------------------ Flask 서버 (Render ping 유지용) ------------------
-app = Flask(__name__)
+# ✅ Cog 자동 로드
+initial_extensions = [
+    "takkari_bot.cogs.help",
+    "takkari_bot.cogs.patchnote",
+    "takkari_bot.cogs.support",
+    "takkari_bot.cogs.userinfo",
+    "takkari_bot.cogs.dm_feature",
+    "takkari_bot.cogs.db_lookup",
+    "takkari_bot.cogs.schedule",
+    "takkari_bot.cogs.loglookup",
+    "takkari_bot.cogs.accordingtobot",
+]
 
-@app.route("/")
-def home():
-    return "Bot is running!"
-
-def run_web():
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
-
-# ------------------ 이벤트: 봇 준비 완료 ------------------
-@bot.event
-async def on_ready():
-    logger.info(f"✅ 로그인 성공: {bot.user} (ID: {bot.user.id})")
-    await bot.change_presence(activity=discord.Game(name="🎉 1.0 출시 준비"))
-
-# ------------------ Cog 로드 함수 ------------------
-async def load_cogs():
-    extensions = [
-        "takkari_bot.cogs.help",
-        "takkari_bot.cogs.schedule",
-        "takkari_bot.cogs.patchnote",
-        "takkari_bot.cogs.support",
-        "takkari_bot.cogs.userinfo",
-        "takkari_bot.cogs.db_lookup",
-        "takkari_bot.cogs.loglookup",
-        "takkari_bot.cogs.dm_feature",
-        "takkari_bot.cogs.accordingtobot",
-    ]
-
-    for ext in extensions:
+async def load_extensions():
+    for ext in initial_extensions:
         try:
             await bot.load_extension(ext)
-            logger.info(f"✅ Loaded extension: {ext}")
+            print(f"✅ Loaded: {ext}")
         except Exception as e:
-            logger.error(f"❌ Failed to load extension {ext}: {e}")
+            print(f"❌ Failed to load {ext}: {e}")
 
-# ------------------ setup_hook (슬래시 명령어 동기화) ------------------
 @bot.event
-async def setup_hook():
-    # 기본 help 명령어 제거 (충돌 방지)
-    bot.remove_command("help")
-    await load_cogs()
+async def on_ready():
+    await bot.tree.sync()
+    print(f"✅ 로그인 완료: {bot.user}")
+    print("✅ 모든 슬래시 명령어 동기화 완료!")
 
-    synced = await bot.tree.sync()
-    logger.info(f"✅ {len(synced)} 개의 슬래시 명령어 동기화 완료 (Global)")
+async def main():
+    async with bot:
+        await load_extensions()
+        await bot.start(TOKEN)
 
-# ------------------ 메인 실행 ------------------
 if __name__ == "__main__":
-    # Flask 웹 서버 실행
-    t = Thread(target=run_web)
-    t.start()
-
-    TOKEN = os.getenv("DISCORD_TOKEN")
-    if not TOKEN:
-        logger.error("❌ DISCORD_TOKEN 환경변수가 설정되지 않았습니다!")
-        exit(1)
-
-    bot.run(TOKEN)
+    import asyncio
+    asyncio.run(main())
