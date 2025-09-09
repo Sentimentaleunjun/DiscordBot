@@ -34,6 +34,7 @@ COGS = [
     "takkari_bot.cogs.schedule",
     "takkari_bot.cogs.support",
     "takkari_bot.cogs.userinfo",
+    "takkari_bot.cogs.fun",
 ]
 
 @bot.event
