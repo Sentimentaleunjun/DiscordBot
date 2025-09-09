@@ -15,10 +15,11 @@ class CustomHelp(commands.Cog):
                 "🎯 서버에서 잡일 해결, 편의 기능 제공\n"
                 "💌 오류나 건의사항이 있으면 DM 또는 /support 로 알려주세요!"
             ),
-            color=discord.Color.blurple()
+            color=discord.Color.from_rgb(255, 102, 178)  # 핑크톤으로 귀엽게
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
+        # 섹션별로 다른 색과 이모지 강조
         embed.add_field(
             name="📅 스케줄",
             value="📝 `/addschedule` (관리자 전용) → 서버 전체 일정 등록\n"
@@ -49,7 +50,11 @@ class CustomHelp(commands.Cog):
             inline=False
         )
 
-        embed.set_footer(text="💖 Edited by Flow in GSEJ")
+        # Footer 꾸미기
+        embed.set_footer(
+            text="💖 Edited by Flow in GSEJ | Server Making… 🔥 정식출시 준비중🚀 🤖AI로 코딩중"
+        )
+
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(bot):
