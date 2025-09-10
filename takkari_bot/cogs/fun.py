@@ -50,7 +50,7 @@ class FunCog(commands.Cog):
         await interaction.response.send_message(f"💰 {interaction.user.name}님의 포인트: {user_points}점", ephemeral=True)
         logger.info(f"{interaction.user} checked points: {user_points}")
 
-    # 퀴즈
+    # 퀴즈 출제
     @app_commands.command(name="quiz", description="퀴즈를 출제하고 풀어보세요!")
     async def quiz(self, interaction: discord.Interaction):
         quiz = db.get_random_quiz()
@@ -60,9 +60,24 @@ class FunCog(commands.Cog):
             return
 
         quiz_id, question, answer = quiz
+
+        # 정답 제출을 위한 Modal 생성
+        class AnswerModal(discord.ui.Modal, title="퀴즈 정답 제출"):
+            answer_input = discord.ui.TextInput(label="정답", placeholder="여기에 답을 입력하세요", required=True, max_length=100)
+
+            async def on_submit(modal_self, modal_interaction: discord.Interaction):
+                user_answer = modal_self.answer_input.value.strip()
+                if user_answer.lower() == answer.lower():
+                    db.add_point(interaction.user.id, 20)
+                    await modal_interaction.response.send_message(f"🎉 정답입니다! 20포인트 획득!\n💰 현재 포인트: {db.get_point(interaction.user.id)}점", ephemeral=True)
+                    logger.info(f"{interaction.user} answered quiz ID {quiz_id} correctly, 20 points added.")
+                else:
+                    await modal_interaction.response.send_message(f"❌ 틀렸습니다! 정답은: {answer}", ephemeral=True)
+                    logger.info(f"{interaction.user} answered quiz ID {quiz_id} incorrectly.")
+
         embed = discord.Embed(title="📝 퀴즈", description=question, color=discord.Color.green())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-        logger.info(f"{interaction.user} received quiz ID {quiz_id}")
+        await interaction.response.send_message(embed=embed, view=discord.ui.View())
+        await interaction.user.send_modal(AnswerModal())
 
 async def setup(bot):
     await bot.add_cog(FunCog(bot))
