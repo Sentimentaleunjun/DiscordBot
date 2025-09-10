@@ -1,46 +1,75 @@
-import os
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import asyncio
+import os
 
-# ===== 인텐트 설정 =====
+# Intents 설정
 intents = discord.Intents.default()
-intents.message_content = True  # 메시지 컨텐츠 인텐트 허용
+intents.guilds = True
+intents.members = True  # 멤버 관련 기능 필요 시
 
-# ===== 봇 설정 =====
-bot = commands.Bot(command_prefix="/", intents=intents)
+# Bot 객체 생성
+bot = commands.Bot(command_prefix='/', intents=intents)
 
-# ===== 확장(코그) 목록 =====
-extensions = [
-    "takkari_bot.cogs.help",     # 헬프
-    "takkari_bot.cogs.fun",      # 재미 기능 (rps, etc)
-    "takkari_bot.cogs.admin",    # 관리자 기능
-    "takkari_bot.cogs.db",     # DB 기능 (필요하면 켜기)
+# 순환할 Presence 메시지
+status_messages = [
+    "Server Making… 🔥",
+    "정식출시 준비중🚀",
+    "🤖AI로 코딩중"
 ]
 
-# ===== 이벤트 =====
+# Presence 순환 Task
+@tasks.loop(seconds=10)
+async def change_status():
+    guild_count = len(bot.guilds)
+    server_status = f"{guild_count}개의 서버 관리중 🔥"
+    for msg in status_messages:
+        await bot.change_presence(
+            status=discord.Status.online,
+            activity=discord.Game(name=f"{msg} | {server_status}")
+        )
+        await asyncio.sleep(10)
+
+# Bot 준비 시
 @bot.event
 async def on_ready():
-    print(f"✅ 로그인 완료: {bot.user}")
-    print(f"🤖 현재 {len(bot.guilds)}개의 서버에서 활동 중")
-    await bot.change_presence(
-        status=discord.Status.online,
-        activity=discord.Game(f"{len(bot.guilds)}개의 서버 관리중 🛠️")
-    )
+    print(f"✅ Logged in as {bot.user} | Ready!")
+    change_status.start()
+    try:
+        synced = await bot.tree.sync()
+        print(f"✅ Synced {len(synced)} slash commands")
+    except Exception as e:
+        print(f"❌ Failed to sync commands: {e}")
 
-# ===== 코그 로드 =====
-async def load_extensions():
-    for ext in extensions:
+# 모든 코그 자동 로드
+async def load_all_cogs():
+    cogs = [
+        "takkari_bot.userinfo",
+        "takkari_bot.support",
+        "takkari_bot.schedule",
+        "takkari_bot.patchnote",
+        "takkari_bot.loglookup",
+        "takkari_bot.help",
+        "takkari_bot.fun",
+        "takkari_bot.dm_feature",
+        "takkari_bot.db_lookup",
+        "takkari_bot.accordingtobot"
+    ]
+    for ext in cogs:
         try:
             await bot.load_extension(ext)
-            print(f"🔌 Cog 로드 성공: {ext}")
+            print(f"✅ Loaded cog: {ext}")
         except Exception as e:
-            print(f"❌ Cog 로드 실패: {ext} - {e}")
+            print(f"❌ Failed to load {ext}: {e}")
 
+# 메인 실행
 async def main():
     async with bot:
-        await load_extensions()
-        await bot.start(os.environ.get("DISCORD_TOKEN"))  # Render 환경변수 사용
+        await load_all_cogs()
+        token = os.getenv("DISCORD_TOKEN")
+        if not token:
+            raise ValueError("DISCORD_TOKEN 환경 변수가 설정되지 않았습니다.")
+        await bot.start(token)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# asyncio로 실행
+asyncio.run(main())
