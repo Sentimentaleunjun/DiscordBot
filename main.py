@@ -1,20 +1,41 @@
 import discord
 from discord.ext import commands, tasks
+from discord import app_commands
 import asyncio
-import os
-from itertools import cycle
-from takkari_bot.utils.logging_config import setup_logging
+from takkari_bot.utils import logging_config
 
-# -------------------- 로그 설정 --------------------
-logger = setup_logging()
+logger = logging_config.setup_logging()
 
-# -------------------- 봇 설정 --------------------
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix="!", intents=intents)
-bot.remove_command("help")
+bot = commands.Bot(command_prefix="/", intents=intents, application_id=1411657882876907540)
 
-# -------------------- 코그 목록 --------------------
-COGS = [
+# ----------------- 순환 Presence -----------------
+status_messages = [
+    "😢 개발자는 버그 수정",
+    "🚀 업데이트 준비",
+    "🔥 열심히 일"
+]
+current_status = 0
+
+@tasks.loop(seconds=15)
+async def change_presence():
+    global current_status
+    await bot.change_presence(activity=discord.Game(name=status_messages[current_status]))
+    current_status = (current_status + 1) % len(status_messages)
+
+@bot.event
+async def on_ready():
+    logger.info(f"로그인 성공: {bot.user} (ID: {bot.user.id})")
+    change_presence.start()
+    # 슬래시 커맨드 동기화
+    try:
+        await bot.tree.sync()
+        logger.info(f"슬래시 커맨드 동기화됨: {len(bot.tree.walk_commands())}개")
+    except Exception as e:
+        logger.error(f"슬래시 커맨드 동기화 실패: {e}")
+
+# ----------------- Cogs 로딩 -----------------
+cogs = [
     "takkari_bot.cogs.userinfo",
     "takkari_bot.cogs.support",
     "takkari_bot.cogs.schedule",
@@ -27,30 +48,15 @@ COGS = [
     "takkari_bot.cogs.accordingtobot"
 ]
 
-# -------------------- 상태 메시지 --------------------
-status_messages = cycle([
-    lambda: f"{len(bot.guilds)}개의 서버 관리중 🔥",
-    lambda: "업데이트 준비중 🚀",
-    lambda: "🤖 AI로 코딩중"
-])
-
-@tasks.loop(seconds=20)
-async def change_presence():
-    msg = next(status_messages)()
-    await bot.change_presence(activity=discord.Game(name=msg))
-
-# -------------------- 코그 로드 --------------------
-@bot.event
-async def on_ready():
-    for cog in COGS:
+async def load_all_cogs():
+    for cog in cogs:
         try:
             await bot.load_extension(cog)
             logger.info(f"✅ {cog} 로드 완료")
         except Exception as e:
             logger.error(f"❌ {cog} 로드 실패: {e}")
-    change_presence.start()
-    logger.info(f"로그인 성공: {bot.user} (ID: {bot.user.id})")
 
-# -------------------- 봇 실행 --------------------
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-bot.run(DISCORD_TOKEN)
+asyncio.run(load_all_cogs())
+
+# ----------------- 실행 -----------------
+bot.run("YOUR_BOT_TOKEN")
