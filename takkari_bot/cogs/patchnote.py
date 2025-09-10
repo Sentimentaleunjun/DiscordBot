@@ -6,7 +6,7 @@ class PatchNote(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.notes = [
-            "🎉 따까리봇 1.0 정식 출시!",
+            "🎉 따까리봇 1.0.1",
             "📅 출시일: 2025-09-10",
             "✨ 슬래시 명령어 완전 지원: /help, /userinfo, /dm, /support, /schedule, /addschedule, /dblookup, /loglookup 등",
             "🎮 펀(Fun) 기능 강화: /rps, /points, /quiz 등",
