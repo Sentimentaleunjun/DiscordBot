@@ -1,83 +1,65 @@
-# takkari_bot/cogs/fun.py
 import discord
-from discord import app_commands
 from discord.ext import commands
-from takkari_bot.utils import db, logging_config
-import random
-
-logger = logging_config.setup_logging()
+from discord import app_commands
+from datetime import datetime
+from takkari_bot.utils import db
 
 class FunCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        db.init_db()  # Cog 로드 시 DB 초기화
-        logger.info("FunCog loaded and DB initialized.")
-
-    # 가위바위보
-    @app_commands.command(name="rps", description="가위바위보 게임을 합니다.")
-    @app_commands.describe(choice="가위, 바위, 보 중 하나를 선택하세요.")
-    async def rps(self, interaction: discord.Interaction, choice: str):
-        choices = ["가위", "바위", "보"]
-        choice = choice.strip()
-        if choice not in choices:
-            await interaction.response.send_message("❌ 가위, 바위, 보 중에서 선택해주세요!", ephemeral=True)
-            logger.warning(f"{interaction.user} tried invalid RPS choice: {choice}")
-            return
-
-        bot_choice = random.choice(choices)
-        result = ""
-        if choice == bot_choice:
-            result = "무승부! 🤝"
-        elif (choice == "가위" and bot_choice == "보") or \
-             (choice == "바위" and bot_choice == "가위") or \
-             (choice == "보" and bot_choice == "바위"):
-            result = "승리! 🎉"
-            db.add_point(interaction.user.id, 10)
-            logger.info(f"{interaction.user} won RPS, 10 points added.")
-        else:
-            result = "패배 😢"
-            logger.info(f"{interaction.user} lost RPS.")
-
-        await interaction.response.send_message(
-            f"너: {choice}\n봇: {bot_choice}\n결과: {result}\n💰 현재 포인트: {db.get_point(interaction.user.id)}점",
-            ephemeral=True
-        )
+        db.init_points_table()
+        db.init_quiz_table()
+        self.attendance = {}  # {user_id: last_attendance_date}
 
     # 포인트 확인
-    @app_commands.command(name="points", description="내 포인트를 확인합니다.")
+    @app_commands.command(name="points", description="내 포인트를 확인합니다")
     async def points(self, interaction: discord.Interaction):
-        user_points = db.get_point(interaction.user.id)
-        await interaction.response.send_message(f"💰 {interaction.user.name}님의 포인트: {user_points}점", ephemeral=True)
-        logger.info(f"{interaction.user} checked points: {user_points}")
+        point = db.get_point(interaction.user.id)
+        await interaction.response.send_message(f"💎 {interaction.user.mention}님, 현재 포인트: {point}", ephemeral=True)
 
-    # 퀴즈 출제
-    @app_commands.command(name="quiz", description="퀴즈를 출제하고 풀어보세요!")
-    async def quiz(self, interaction: discord.Interaction):
-        quiz = db.get_random_quiz()
-        if not quiz:
-            await interaction.response.send_message("❌ 등록된 퀴즈가 없습니다!", ephemeral=True)
-            logger.warning(f"{interaction.user} tried to get a quiz but none exist.")
+    # 출석 체크
+    @app_commands.command(name="attendance", description="오늘 출석 체크하고 포인트 받기")
+    async def attendance(self, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        today = datetime.utcnow().date()
+
+        last_date = self.attendance.get(user_id)
+        if last_date == today:
+            await interaction.response.send_message("⚠️ 이미 오늘 출석하셨습니다!", ephemeral=True)
             return
 
-        quiz_id, question, answer = quiz
+        self.attendance[user_id] = today
+        db.add_point(user_id, 10)
 
-        # 정답 제출을 위한 Modal 생성
-        class AnswerModal(discord.ui.Modal, title="퀴즈 정답 제출"):
-            answer_input = discord.ui.TextInput(label="정답", placeholder="여기에 답을 입력하세요", required=True, max_length=100)
+        point = db.get_point(user_id)
+        role = discord.utils.get(interaction.guild.roles, name="VIP")
+        if point >= 100 and role and role not in interaction.user.roles:
+            await interaction.user.add_roles(role)
+            await interaction.response.send_message(f"🎉 출석 완료! 포인트 10 획득 + VIP 뱃지 부여!", ephemeral=True)
+        else:
+            await interaction.response.send_message(f"🎉 출석 완료! 포인트 10 획득", ephemeral=True)
 
-            async def on_submit(modal_self, modal_interaction: discord.Interaction):
-                user_answer = modal_self.answer_input.value.strip()
-                if user_answer.lower() == answer.lower():
-                    db.add_point(interaction.user.id, 20)
-                    await modal_interaction.response.send_message(f"🎉 정답입니다! 20포인트 획득!\n💰 현재 포인트: {db.get_point(interaction.user.id)}점", ephemeral=True)
-                    logger.info(f"{interaction.user} answered quiz ID {quiz_id} correctly, 20 points added.")
-                else:
-                    await modal_interaction.response.send_message(f"❌ 틀렸습니다! 정답은: {answer}", ephemeral=True)
-                    logger.info(f"{interaction.user} answered quiz ID {quiz_id} incorrectly.")
+    # 퀴즈
+    @app_commands.command(name="quiz", description="퀴즈를 풀어보세요!")
+    async def quiz(self, interaction: discord.Interaction):
+        q = db.get_random_quiz()
+        if not q:
+            await interaction.response.send_message("퀴즈가 아직 준비되지 않았습니다.", ephemeral=True)
+            return
 
-        embed = discord.Embed(title="📝 퀴즈", description=question, color=discord.Color.green())
-        await interaction.response.send_message(embed=embed, view=discord.ui.View())
-        await interaction.user.send_modal(AnswerModal())
+        question = q[1]
+        await interaction.response.send_message(f"📝 퀴즈: {question}\n정답은 DM으로 알려주세요!", ephemeral=True)
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        # 샘플 아재개그 퀴즈 등록
+        jokes = [
+            ("왜 바다가 짠지 아세요?", "소금 때문에"),
+            ("컴퓨터가 배고프면 뭐가 될까요?", "램(ram)이 고파서"),
+            ("왜 수학책이 우울할까요?", "문제가 많아서")
+        ]
+        for q, a in jokes:
+            db.add_quiz(q, a)
 
 async def setup(bot):
     await bot.add_cog(FunCog(bot))
