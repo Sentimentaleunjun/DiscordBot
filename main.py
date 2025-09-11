@@ -1,14 +1,15 @@
 import discord
-from discord.ext import tasks
-import asyncio
+from discord.ext import commands, tasks
 from flask import Flask
 import os
+import asyncio
 
 # ------------------ Discord Bot 설정 ------------------
 intents = discord.Intents.default()
 intents.message_content = True  # 필요에 따라 True/False 조정
 
-bot = discord.Bot(intents=intents)  # 슬래시 전용
+bot = commands.Bot(command_prefix="/", intents=intents)  # 슬래시 명령어 전용
+tree = bot.tree  # 슬래시 명령어 등록용
 
 # ------------------ Presence 상태 ------------------
 @tasks.loop(seconds=10)
@@ -52,7 +53,6 @@ app = Flask(__name__)
 def home():
     return "봇 서버가 실행 중입니다!"
 
-# Render에서는 PORT 환경변수를 사용
 port = int(os.environ.get("PORT", 10000))
 
 # ------------------ 봇 이벤트 ------------------
@@ -61,14 +61,13 @@ async def on_ready():
     print(f"{bot.user} 봇 로그인 완료")
     change_presence.start()  # Presence 상태 시작
     await load_all_cogs()
+    await tree.sync()  # 슬래시 명령어 글로벌 동기화
 
 # ------------------ 메인 ------------------
 if __name__ == "__main__":
-    # Flask 서버 비동기 실행
     from threading import Thread
     def run_flask():
         app.run(host="0.0.0.0", port=port)
     Thread(target=run_flask).start()
 
-    # 디스코드 봇 실행
     bot.run(os.environ["DISCORD_BOT_TOKEN"])
