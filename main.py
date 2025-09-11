@@ -18,7 +18,6 @@ cogs = [
     "takkari_bot.cogs.accordingtobot",
     "takkari_bot.cogs.support",
     "takkari_bot.cogs.schedule",
-    "takkari_bot.cogs.addschedule",
     "takkari_bot.cogs.patchnote",
     "takkari_bot.cogs.loglookup",
     "takkari_bot.cogs.db_lookup",
