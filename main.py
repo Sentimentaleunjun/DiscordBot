@@ -1,56 +1,61 @@
 import os
-import random
 import asyncio
 import discord
 from discord.ext import commands, tasks
+from discord import app_commands
 from flask import Flask
-from takkari_bot.utils import logging_config, db
+from takkari_bot.utils import db
 
-# ---------------- 로깅 ----------------
-logger = logging_config.setup_logging()
-
-# ---------------- Flask ----------------
+# ---------------- Flask 서버 ----------------
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Takkari Bot is running!"
+    return "Bot is running!"
 
-# ---------------- Discord ----------------
+# ---------------- Discord Bot ----------------
 intents = discord.Intents.default()
-intents.members = True
-intents.message_content = True
+intents.message_content = True  # 메시지 내용 읽기 권한 (권한이 필요한 경우)
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ---------------- Presence ----------------
-@tasks.loop(minutes=5)
-async def update_presence():
-    await bot.wait_until_ready()
-    guild_count = len(bot.guilds)
+# Presence 상태 리스트
+statuses = [
+    lambda: f"🔥 {len(bot.guilds)}개의 서버 관리",
+    lambda: "🚀 업데이트 준비",
+    lambda: "🤖 AI로 코딩"
+]
 
-    activities = [
-        f"🔥 {guild_count}개의 서버 관리",
-        "🚀 업데이트 준비",
-        "🤖 AI로 코딩"
-    ]
-    activity = discord.Game(random.choice(activities))
-    await bot.change_presence(status=discord.Status.online, activity=activity)
-    logger.info(f"Presence 업데이트됨: {activity.name}")
+# Presence 변경 task
+@tasks.loop(seconds=15)
+async def change_presence():
+    status = discord.Game(next(change_presence.status_cycle))
+    await bot.change_presence(activity=status)
 
-# ---------------- 이벤트 ----------------
+# Presence 순환 iterator
+import itertools
+change_presence.status_cycle = itertools.cycle(statuses)
+
+# ---------------- Bot 이벤트 ----------------
 @bot.event
 async def on_ready():
-    logger.info(f"로그인 성공: {bot.user} (ID: {bot.user.id})")
+    print(f"✅ Bot logged in as {bot.user} (ID: {bot.user.id})")
+    
+    # DB 초기화
+    db.init_db()
+    
+    # 슬래시 명령어 글로벌 동기화
     try:
-        synced = await bot.tree.sync()
-        logger.info(f"슬래시 커맨드 동기화됨: {len(synced)}개")
+        await bot.tree.sync()
+        print("✅ Global slash commands synchronized")
     except Exception as e:
-        logger.error(f"슬래시 커맨드 동기화 실패: {e}")
-    update_presence.start()
+        print(f"❌ Slash command sync failed: {e}")
+    
+    # Presence 시작
+    change_presence.start()
 
 # ---------------- Cog 로드 ----------------
-initial_extensions = [
+cogs = [
     "takkari_bot.cogs.userinfo",
     "takkari_bot.cogs.support",
     "takkari_bot.cogs.schedule",
@@ -63,31 +68,28 @@ initial_extensions = [
     "takkari_bot.cogs.accordingtobot"
 ]
 
-for ext in initial_extensions:
-    try:
-        bot.load_extension(ext)
-        logger.info(f"✅ {ext.split('.')[-1]}.py 로드 성공")
-    except Exception as e:
-        logger.error(f"❌ {ext.split('.')[-1]}.py 로드 실패: {e}")
+async def load_cogs():
+    for cog in cogs:
+        try:
+            await bot.load_extension(cog)
+            print(f"✅ {cog} loaded")
+        except Exception as e:
+            print(f"❌ Failed to load {cog}: {e}")
 
-# ---------------- 실행 ----------------
+# ---------------- Run ----------------
+async def main():
+    # Cog 로드
+    await load_cogs()
+
+    # Bot 실행
+    await bot.start(os.environ["DISCORD_BOT_TOKEN"])
+
+# Flask 서버와 Bot 동시 실행
+def start_flask():
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
+
 if __name__ == "__main__":
-    # DB 초기화
-    db.init_db()
-
-    # Render용 Flask
-    import threading
-    def run_flask():
-        port = int(os.environ.get("PORT", 10000))
-        app.run(host="0.0.0.0", port=port)
-
-    threading.Thread(target=run_flask).start()
-
-    # Token 확인 + 실행
-    token = os.getenv("DISCORD_BOT_TOKEN")
-
-    if not token:
-        logger.error("❌ DISCORD_BOT_TOKEN 환경변수를 불러오지 못했습니다!")
-    else:
-        logger.info(f"✅ 토큰이 정상적으로 불러와졌습니다. 길이: {len(token)}")
-        bot.run(token)
+    loop = asyncio.get_event_loop()
+    loop.create_task(main())
+    start_flask()
