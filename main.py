@@ -1,77 +1,58 @@
-import discord
-from discord.ext import commands, tasks
-from flask import Flask
 import os
-import asyncio
-from threading import Thread
+import discord
+from discord.ext import commands
+from flask import Flask
+from takkari_bot.utils import db
 
-# ------------------ Discord Bot 설정 ------------------
 intents = discord.Intents.default()
 intents.message_content = True
 
-bot = commands.Bot(command_prefix="/", intents=intents)
-tree = bot.tree  # 슬래시 명령어 등록용
+bot = discord.Bot(intents=intents)  # 슬래시 전용
 
-# ------------------ Presence 상태 ------------------
-base_statuses = [
-    "🚀 업데이트 준비",
-    "🤖 AI로 코딩"
-]
+# DB 초기화
+db.init_db()
 
-@tasks.loop(seconds=15)
-async def update_presence():
-    while True:
-        guild_count = len(bot.guilds)
-        # 서버 수 포함
-        dynamic_statuses = [f"🔥 {guild_count}개의 서버 관리"] + base_statuses
-        for status in dynamic_statuses:
-            await bot.change_presence(activity=discord.Game(status))
-            await asyncio.sleep(10)
-
-# ------------------ Cog 로드 ------------------
+# Cog 로드
 cogs = [
     "takkari_bot.cogs.userinfo",
+    "takkari_bot.cogs.accordingtobot",
     "takkari_bot.cogs.support",
     "takkari_bot.cogs.schedule",
+    "takkari_bot.cogs.addschedule",
     "takkari_bot.cogs.patchnote",
     "takkari_bot.cogs.loglookup",
-    "takkari_bot.cogs.help",
-    "takkari_bot.cogs.dm_feature",
     "takkari_bot.cogs.db_lookup",
-    "takkari_bot.cogs.accordingtobot"
+    "takkari_bot.cogs.help"
 ]
 
-async def load_all_cogs():
-    for cog in cogs:
-        try:
-            await bot.load_extension(cog)
-            print(f"✅ {cog} 로드 완료")
-        except Exception as e:
-            print(f"❌ {cog} 로드 실패: {e}")
+for cog in cogs:
+    bot.load_extension(cog)
+    print(f"✅ {cog} 로드 완료")
 
-# ------------------ Flask 서버 설정 ------------------
-app = Flask(__name__)
+# 봇 상태
+@bot.event
+async def on_ready():
+    await bot.change_presence(
+        activity=discord.Activity(
+            type=discord.ActivityType.playing,
+            name=f"🔥 {len(bot.guilds)}개의 서버 관리중, 🚀 업데이트 준비, 🤖 AI로 코딩하는중"
+        )
+    )
+    try:
+        synced = await bot.tree.sync()
+        print(f"✅ {len(synced)}개 글로벌 슬래시 명령어 동기화 완료")
+    except Exception as e:
+        print(f"❌ 슬래시 동기화 오류: {e}")
+    print(f"{bot.user} 로그인 완료!")
+
+# Flask 서버
+app = Flask("takkari_bot")
 
 @app.route("/")
 def home():
-    return "봇 서버가 실행 중입니다!"
+    return "봇이 실행 중입니다!"
 
-port = int(os.environ.get("PORT", 10000))
-
-def run_flask():
-    app.run(host="0.0.0.0", port=port)
-
-# ------------------ 봇 이벤트 ------------------
-@bot.event
-async def on_ready():
-    print(f"{bot.user} 봇 로그인 완료")
-    # Presence 상태 시작
-    bot.loop.create_task(update_presence())
-    await load_all_cogs()
-    await tree.sync()  # 슬래시 명령어 글로벌 동기화
-    print("🌐 슬래시 명령어 글로벌 동기화 완료")
-
-# ------------------ 메인 ------------------
 if __name__ == "__main__":
-    Thread(target=run_flask).start()  # Flask 서버 백그라운드 실행
+    from threading import Thread
+    Thread(target=lambda: app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))).start()
     bot.run(os.environ["DISCORD_BOT_TOKEN"])
