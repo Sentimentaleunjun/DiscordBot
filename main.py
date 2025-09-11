@@ -70,4 +70,4 @@ if __name__ == "__main__":
     import threading
     flask_thread = threading.Thread(target=run_flask)
     flask_thread.start()
-    bot.run("YOUR_BOT_TOKEN")
+    bot.run("DISCORD_TOKEN")
