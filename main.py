@@ -7,25 +7,26 @@ from threading import Thread
 
 # ------------------ Discord Bot 설정 ------------------
 intents = discord.Intents.default()
-intents.message_content = True  # 필요에 따라 True/False 조정
+intents.message_content = True
 
-bot = commands.Bot(command_prefix="/", intents=intents)  # 슬래시 전용
+bot = commands.Bot(command_prefix="/", intents=intents)
 tree = bot.tree  # 슬래시 명령어 등록용
 
 # ------------------ Presence 상태 ------------------
-statuses = [
+base_statuses = [
     "🚀 업데이트 준비",
     "🤖 AI로 코딩"
 ]
 
-@tasks.loop(seconds=10)
-async def change_presence():
-    guild_count = len(bot.guilds)
-    # 서버 수를 포함한 첫 번째 상태
-    dynamic_statuses = [f"🔥 {guild_count}개의 서버 관리중"] + statuses
-    for status in dynamic_statuses:
-        await bot.change_presence(activity=discord.Game(status))
-        await asyncio.sleep(10)
+@tasks.loop(seconds=15)
+async def update_presence():
+    while True:
+        guild_count = len(bot.guilds)
+        # 서버 수 포함
+        dynamic_statuses = [f"🔥 {guild_count}개의 서버 관리"] + base_statuses
+        for status in dynamic_statuses:
+            await bot.change_presence(activity=discord.Game(status))
+            await asyncio.sleep(10)
 
 # ------------------ Cog 로드 ------------------
 cogs = [
@@ -65,7 +66,8 @@ def run_flask():
 @bot.event
 async def on_ready():
     print(f"{bot.user} 봇 로그인 완료")
-    change_presence.start()  # Presence 상태 시작
+    # Presence 상태 시작
+    bot.loop.create_task(update_presence())
     await load_all_cogs()
     await tree.sync()  # 슬래시 명령어 글로벌 동기화
     print("🌐 슬래시 명령어 글로벌 동기화 완료")
