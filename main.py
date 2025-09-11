@@ -21,7 +21,8 @@ cogs = [
     "takkari_bot.cogs.patchnote",
     "takkari_bot.cogs.loglookup",
     "takkari_bot.cogs.db_lookup",
-    "takkari_bot.cogs.help"
+    "takkari_bot.cogs.help",
+    "takkari_bot.cogs.dm_features"
 ]
 
 for cog in cogs:
