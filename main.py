@@ -22,7 +22,7 @@ cogs = [
     "takkari_bot.cogs.loglookup",
     "takkari_bot.cogs.db_lookup",
     "takkari_bot.cogs.help",
-    "takkari_bot.cogs.dm_features"
+    "takkari_bot.cogs.dm_feature"
 ]
 
 for cog in cogs:
