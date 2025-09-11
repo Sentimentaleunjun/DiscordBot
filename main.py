@@ -1,8 +1,7 @@
 import os
 import asyncio
 import discord
-from discord.ext import commands, tasks
-from discord import app_commands
+from discord.ext import tasks
 from flask import Flask
 from takkari_bot.utils import db
 
@@ -15,9 +14,8 @@ def home():
 
 # ---------------- Discord Bot ----------------
 intents = discord.Intents.default()
-intents.message_content = True  # 메시지 내용 읽기 권한 (권한이 필요한 경우)
-
-bot = commands.Bot(command_prefix="!", intents=intents)
+intents.message_content = True  # 메시지 내용 읽기 권한
+bot = discord.Bot(intents=intents)  # 슬래시 전용
 
 # Presence 상태 리스트
 statuses = [
