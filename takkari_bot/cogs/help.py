@@ -9,14 +9,14 @@ class HelpCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="help", description="따까리봇의 모든 명령어 목록을 보여줘요! ✨")
+    @app_commands.command(name="help", description="따까리봇의 소개! ✨")
     async def help(self, interaction: discord.Interaction):
         embed = discord.Embed(
             title="🤖 따까리봇 소개 및 사용가이드",
             description=(
                 "여러분의 잡일 해결사! 🛠\n"
                 "More convinent , Safer!✨\n"
-                "오류나 개선 사항이 있다면 eunddiseundd#0 DM으로 알려주세요! 💌"
+                "오류나 개선 사항이 있다면 eunddiseundd#0 DM , Support으로 알려주세요! 💌"
             ),
             color=0xC3073F
         )
@@ -39,12 +39,7 @@ class HelpCog(commands.Cog):
         )
         embed.add_field(
             name="⚙️ 기타",
-            value="/userinfo @유저 → 유저 정보 확인\n/dm @유저 <메시지> → DM 보내기 (관리자 전용)",
-            inline=False
-        )
-        embed.add_field(
-            name="🎉 Fun 기능",
-            value="/rps → 가위바위보 게임\n/points → 내 포인트 확인\n/quiz → 퀴즈 출제 및 풀기",
+            value="/userinfo @유저 → 유저 정보 확인",
             inline=False
         )
         embed.add_field(
@@ -53,7 +48,7 @@ class HelpCog(commands.Cog):
             inline=False
         )
 
-        embed.set_footer(text="Edited with 💖 by Flow in GSEJ")
+        embed.set_footer(text="Edited with KBC💖 by Flow in GSEJ")
 
         # Ephemeral 메시지로 보내서 오직 호출한 사람만 보이게
         await interaction.response.send_message(embed=embed, ephemeral=True)
