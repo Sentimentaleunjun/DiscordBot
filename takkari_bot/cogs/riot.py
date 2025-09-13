@@ -12,7 +12,7 @@ class RiotOAuth(commands.Cog):
         client_id = os.environ.get("RIOT_CLIENT_ID")
         redirect_uri = os.environ.get("RIOT_REDIRECT_URI")
         if not client_id or not redirect_uri:
-            await interaction.response.send_message("환경변수가 설정되어 있지 않습니다.", ephemeral=True)
+            await interaction.response.send_message("TKR 001 오류 . /support나 gsej support 사이트에서 오류코드를 검색하세요", ephemeral=True)
             return
 
         oauth_url = (
