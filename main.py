@@ -44,7 +44,7 @@ intents.message_content = True
 intents.guilds = True
 intents.members = True
 
-bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+bot = commands.Bot(command_prefix="/", intents=intents, help_command=None)
 
 # ---------- COG 목록 ----------
 COGS = [
@@ -59,17 +59,17 @@ COGS = [
     "takkari_bot.cogs.help"
 ]
 
-# ---------- Cog 로드 ----------
-loaded = 0
-for cog in COGS:
-    try:
-        bot.load_extension(cog)
-        logger.info("✅ %s 로드 완료", cog)
-        loaded += 1
-    except Exception as e:
-        logger.exception("❌ %s 로드 실패: %s", cog, e)
-
-logger.info("총 시도한 코그: %d, 성공: %d", len(COGS), loaded)
+# ---------- Cog 로드 (비동기) ----------
+async def load_cogs():
+    loaded = 0
+    for cog in COGS:
+        try:
+            await bot.load_extension(cog)
+            logger.info("✅ %s 로드 완료", cog)
+            loaded += 1
+        except Exception as e:
+            logger.exception("❌ %s 로드 실패: %s", cog, e)
+    logger.info("총 시도한 코그: %d, 성공: %d", len(COGS), loaded)
 
 # ---------- Presence 순환 ----------
 PRESENCE_MESSAGES = [
@@ -96,7 +96,7 @@ async def on_ready():
     # 슬래시 커맨드 글로벌 동기화 (중복 방지)
     if not hasattr(bot, "synced") or not bot.synced:
         try:
-            synced = await bot.tree.sync()  # 글로벌 동기화
+            synced = await bot.tree.sync()
             logger.info("🌐 슬래시 명령어 동기화 완료: %d개", len(synced))
             bot.synced = True
         except Exception as e:
@@ -109,7 +109,6 @@ async def on_ready():
     # Presence 시작
     if not rotate_presence.is_running():
         rotate_presence.start()
-
 
 @bot.event
 async def on_app_command_error(interaction, error):
@@ -128,8 +127,13 @@ def start_bot():
     if not token:
         logger.error("환경변수 DISCORD_BOT_TOKEN 미설정")
         sys.exit(1)
-    logger.info("봇 시작 시도")
-    bot.run(token)
+
+    async def runner():
+        await load_cogs()  # COG 비동기 로드
+        logger.info("봇 시작 시도")
+        await bot.start(token)
+
+    asyncio.run(runner())
 
 if __name__ == "__main__":
     start_bot()
