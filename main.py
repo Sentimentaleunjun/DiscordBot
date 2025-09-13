@@ -9,7 +9,7 @@ from discord.ext import commands, tasks
 from flask import Flask, request, redirect, session, jsonify
 
 import requests
-from db import init_db
+from takkari_bot.utils.db import init_db
 
 # ---------- 로깅 ----------
 logging.basicConfig(level=logging.INFO)
