@@ -6,6 +6,8 @@ from discord.ext import commands
 class RiotOAuth(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+    def cog_load(self):
+        self.bot.tree.add_command(self.login_riot)
 
     @app_commands.command(name="login_riot", description="라이엇 계정으로 로그인")
     async def login_riot(self, interaction: discord.Interaction):
