@@ -8,6 +8,8 @@ class HelpCog(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+    def cog_load(self):
+        self.bot.tree.add_command(self.help)
 
     @app_commands.command(name="help", description="따까리봇의 소개! ✨")
     async def help(self, interaction: discord.Interaction):
