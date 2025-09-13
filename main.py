@@ -7,22 +7,27 @@ from threading import Thread
 import discord
 from discord.ext import commands, tasks
 from flask import Flask
+
+# 프로젝트 내부 유틸
 from takkari_bot.utils import db, logging_config
 
+# ---------- 로깅 설정 ----------
 logger = logging_config.setup_logging()
 logger.info("로그 시작")
 
+# ---------- DB 초기화 ----------
 try:
     db.init_db()
     logger.info("✅ DB 초기화 완료")
 except Exception as e:
     logger.exception("❌ DB 초기화 실패: %s", e)
 
+# ---------- Flask 서버 ----------
 app = Flask("takkari_bot")
 
 @app.route("/")
 def index():
-    return "Takkari Bot - healthy"
+    return "Main Server is Running! (this is beta version . GSEJ"
 
 PORT = int(os.environ.get("PORT", 10000))
 
@@ -33,38 +38,40 @@ def run_flask():
 flask_thread = Thread(target=run_flask, daemon=True)
 flask_thread.start()
 
+# ---------- Discord Bot 설정 ----------
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
 intents.members = True
 
-bot = commands.Bot(command_prefix="/", intents=intents, help_command=None)
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
-
+# ---------- COG 목록 ----------
 COGS = [
     "takkari_bot.cogs.userinfo",
     "takkari_bot.cogs.accordingtobot",
     "takkari_bot.cogs.support",
     "takkari_bot.cogs.schedule",
-    "takkari_bot.cogs.riot",
     "takkari_bot.cogs.patchnote",
     "takkari_bot.cogs.loglookup",
     "takkari_bot.cogs.db_lookup",
-    "takkari_bot.cogs.updown",
+    "takkari_bot.cogs.riot",
     "takkari_bot.cogs.help"
 ]
 
-async def load_cogs():
-    loaded = 0
-    for cog in COGS:
-        try:
-            await bot.load_extension(cog)
-            logger.info("✅ %s 로드 완료", cog)
-            loaded += 1
-        except Exception as e:
-            logger.exception("❌ %s 로드 실패: %s", cog, e)
-    logger.info("총 시도한 코그: %d, 성공: %d", len(COGS), loaded)
+# ---------- Cog 로드 ----------
+loaded = 0
+for cog in COGS:
+    try:
+        bot.load_extension(cog)
+        logger.info("✅ %s 로드 완료", cog)
+        loaded += 1
+    except Exception as e:
+        logger.exception("❌ %s 로드 실패: %s", cog, e)
 
+logger.info("총 시도한 코그: %d, 성공: %d", len(COGS), loaded)
+
+# ---------- Presence 순환 ----------
 PRESENCE_MESSAGES = [
     "🔥 {guild_count}개의 서버 관리",
     "🚀 업데이트 준비",
@@ -78,7 +85,6 @@ async def rotate_presence():
         for msg in PRESENCE_MESSAGES:
             name = msg.format(guild_count=guild_count)
             await bot.change_presence(activity=discord.Game(name=name))
-            logger.debug("Presence 변경: %s", name)
             await asyncio.sleep(10)
     except Exception:
         logger.exception("Presence 순환 중 오류 발생")
@@ -86,21 +92,21 @@ async def rotate_presence():
 @bot.event
 async def on_ready():
     logger.info("로그인 성공: %s (ID: %s)", bot.user, bot.user.id)
-    print(f"로그인 성공: {bot.user} (ID: {bot.user.id})")
 
-    await load_cogs()
-
+    # 슬래시 커맨드 동기화
     try:
         synced = await bot.tree.sync()
         logger.info("🌐 슬래시 명령어 동기화 완료: %d개", len(synced))
-        print(f"🌐 슬래시 명령어 동기화 완료: {len(synced)}개")
     except Exception as e:
         logger.exception("❌ 슬래시 명령어 동기화 실패: %s", e)
 
+    # 서버 수 출력
+    guild_count = len(bot.guilds)
+    logger.info("현재 접속 서버 수: %d", guild_count)
 
+    # Presence 시작
     if not rotate_presence.is_running():
         rotate_presence.start()
-        logger.info("Presence 순환 스타트")
 
 @bot.event
 async def on_app_command_error(interaction, error):
@@ -113,12 +119,13 @@ async def on_app_command_error(interaction, error):
     except Exception:
         logger.exception("에러 피드백 전송 중 예외")
 
-
+# ---------- 봇 시작 ----------
 def start_bot():
     token = os.environ.get("DISCORD_BOT_TOKEN")
     if not token:
         logger.error("환경변수 DISCORD_BOT_TOKEN 미설정")
         sys.exit(1)
+    logger.info("봇 시작 시도")
     bot.run(token)
 
 if __name__ == "__main__":
