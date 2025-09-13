@@ -57,16 +57,23 @@ COGS = [
 ]
 
 # ---------- Cog 로드 ----------
-loaded = 0
-for cog in COGS:
-    try:
-        bot.load_extension(cog)
-        logger.info("✅ %s 로드 완료", cog)
-        loaded += 1
-    except Exception as e:
-        logger.exception("❌ %s 로드 실패: %s", cog, e)
+async def load_cogs():
+    loaded = 0
+    for cog in COGS:
+        try:
+            await bot.load_extension(cog)  # ✅ await 추가
+            logger.info("✅ %s 로드 완료", cog)
+            loaded += 1
+        except Exception as e:
+            logger.exception("❌ %s 로드 실패: %s", cog, e)
 
-logger.info("총 시도한 코그: %d, 성공: %d", len(COGS), loaded)
+    logger.info("총 시도한 코그: %d, 성공: %d", len(COGS), loaded)
+
+@bot.event
+async def setup_hook():
+    # setup_hook 안에서 cog 로딩 실행
+    await load_cogs()
+
 
 # ---------- Presence 순환 ----------
 PRESENCE_MESSAGES = [
