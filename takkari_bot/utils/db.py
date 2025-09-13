@@ -87,6 +87,36 @@ def get_riot_user(discord_id):
     res = execute("SELECT summoner_name, access_token, refresh_token, token_expiry FROM riot_users WHERE discord_id=?", (discord_id,), fetch=True)
     return res[0] if res else None
 
+# Riot OAuth 유저 저장
+def init_riot_table():
+    execute("""
+        CREATE TABLE IF NOT EXISTS riot_users (
+            discord_id TEXT PRIMARY KEY,
+            summoner_name TEXT,
+            access_token TEXT,
+            refresh_token TEXT,
+            token_expiry TIMESTAMP
+        )
+    """, commit=True)
+
+def add_or_update_riot_user(discord_id, summoner_name, access_token, refresh_token, token_expiry):
+    if execute("SELECT discord_id FROM riot_users WHERE discord_id=?", (discord_id,), fetch=True):
+        execute("""
+            UPDATE riot_users
+            SET summoner_name=?, access_token=?, refresh_token=?, token_expiry=?
+            WHERE discord_id=?
+        """, (summoner_name, access_token, refresh_token, token_expiry, discord_id), commit=True)
+    else:
+        execute("""
+            INSERT INTO riot_users (discord_id, summoner_name, access_token, refresh_token, token_expiry)
+            VALUES (?, ?, ?, ?, ?)
+        """, (discord_id, summoner_name, access_token, refresh_token, token_expiry), commit=True)
+
+def get_riot_user(discord_id):
+    res = execute("SELECT summoner_name, access_token, refresh_token, token_expiry FROM riot_users WHERE discord_id=?", (discord_id,), fetch=True)
+    return res[0] if res else None
+
+
 # ---------- Init All ----------
 def init_db():
     init_support_table()
