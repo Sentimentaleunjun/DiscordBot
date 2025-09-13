@@ -5,8 +5,6 @@ from discord.ext import commands
 class DMFeature(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-    def cog_load(self):
-        self.bot.tree.add_command(self.dm)
 
     @app_commands.command(name="dm")
     async def send_dm(self, ctx, user: discord.User, *, message: str):
