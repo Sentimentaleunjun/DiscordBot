@@ -46,7 +46,7 @@ bot = commands.Bot(command_prefix="/", intents=intents, help_command=None)
 # ---------- COG 목록 ----------
 COGS = [
     "takkari_bot.cogs.userinfo",
-    "takkari_bot.cogs.accordingtobot",
+    "takkari_bot.cogs.announce",
     "takkari_bot.cogs.support",
     "takkari_bot.cogs.schedule",
     "takkari_bot.cogs.patchnote",
