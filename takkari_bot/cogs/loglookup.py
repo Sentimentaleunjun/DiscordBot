@@ -6,6 +6,8 @@ from discord import app_commands
 class LogLookup(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+    def cog_load(self):
+        self.bot.tree.add_command(self.loglookup)
 
     @app_commands.command(name="loglookup", description="현재 채널에서 채팅 로그를 검색합니다.")
     async def loglookup(self, interaction: discord.Interaction, keyword: str):
