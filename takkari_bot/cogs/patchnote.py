@@ -5,8 +5,6 @@ from discord import app_commands
 class PatchNote(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-    def cog_load(self):
-        self.bot.tree.add_command(self.patchnote)
         self.notes = [
             "🎉 따까리봇 1.0.1",
             "📅 출시일: 2025-09-10",
