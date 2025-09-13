@@ -93,12 +93,14 @@ async def rotate_presence():
 async def on_ready():
     logger.info("로그인 성공: %s (ID: %s)", bot.user, bot.user.id)
 
-    # 슬래시 커맨드 동기화
-    try:
-        synced = await bot.tree.sync()
-        logger.info("🌐 슬래시 명령어 동기화 완료: %d개", len(synced))
-    except Exception as e:
-        logger.exception("❌ 슬래시 명령어 동기화 실패: %s", e)
+    # 슬래시 커맨드 글로벌 동기화 (중복 방지)
+    if not hasattr(bot, "synced") or not bot.synced:
+        try:
+            synced = await bot.tree.sync()  # 글로벌 동기화
+            logger.info("🌐 슬래시 명령어 동기화 완료: %d개", len(synced))
+            bot.synced = True
+        except Exception as e:
+            logger.exception("❌ 슬래시 명령어 동기화 실패: %s", e)
 
     # 서버 수 출력
     guild_count = len(bot.guilds)
@@ -107,6 +109,7 @@ async def on_ready():
     # Presence 시작
     if not rotate_presence.is_running():
         rotate_presence.start()
+
 
 @bot.event
 async def on_app_command_error(interaction, error):
