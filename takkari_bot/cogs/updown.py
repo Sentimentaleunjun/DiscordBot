@@ -9,6 +9,10 @@ user_games = {}
 class UpDown(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+    def cog_load(self):
+        self.bot.tree.add_command(self.updown_start)
+    def cog_load(self):
+        self.bot.tree.add_command(self.updown_guess)
 
     @app_commands.command(name="updown_start", description="업다운 게임 시작 (1~100 숫자 맞추기)")
     async def start_game(self, interaction: discord.Interaction):
