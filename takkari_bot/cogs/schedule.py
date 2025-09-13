@@ -5,12 +5,6 @@ from discord import app_commands
 class AddSchedule(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-    def cog_load(self):
-        self.bot.tree.add_command(self.schedule)
-    def cog_load(self):
-        self.bot.tree.add_command(self.viewschedule)
-    def cog_load(self):
-        self.bot.tree.add_command(self.addschedule)
         self.schedules = []
 
     @app_commands.command(name="addschedule", description="스케줄을 추가합니다.")
