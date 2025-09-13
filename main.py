@@ -87,6 +87,7 @@ COGS = [
     "takkari_bot.cogs.loglookup",
     "takkari_bot.cogs.db_lookup",
     "takkari_bot.cogs.help",
+    "takkari_bot.cogs.updown",
     "takkari_bot.cogs.riot"
 ]
 
