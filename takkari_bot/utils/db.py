@@ -1,5 +1,6 @@
 import sqlite3
 import threading
+from datetime import datetime
 
 DB_PATH = "shared/user.db"
 _lock = threading.Lock()
@@ -18,7 +19,7 @@ def execute(sql, params=(), fetch=False, commit=False):
             conn.close()
         return result
 
-# Support
+# ---------- Support ----------
 def init_support_table():
     execute("""
         CREATE TABLE IF NOT EXISTS support (
@@ -42,44 +43,7 @@ def close_support(support_id):
         return True
     return False
 
-# Points
-def init_points_table():
-    execute("""
-        CREATE TABLE IF NOT EXISTS points (
-            user_id INTEGER PRIMARY KEY,
-            point INTEGER DEFAULT 0
-        )
-    """, commit=True)
-
-def add_point(user_id, amount):
-    current = execute("SELECT point FROM points WHERE user_id=?", (user_id,), fetch=True)
-    if current:
-        execute("UPDATE points SET point=point+? WHERE user_id=?", (amount, user_id), commit=True)
-    else:
-        execute("INSERT INTO points (user_id, point) VALUES (?, ?)", (user_id, amount), commit=True)
-
-def get_point(user_id):
-    res = execute("SELECT point FROM points WHERE user_id=?", (user_id,), fetch=True)
-    return res[0][0] if res else 0
-
-# Quiz
-def init_quiz_table():
-    execute("""
-        CREATE TABLE IF NOT EXISTS quiz (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            question TEXT NOT NULL,
-            answer TEXT NOT NULL
-        )
-    """, commit=True)
-
-def add_quiz(question, answer):
-    execute("INSERT INTO quiz (question, answer) VALUES (?, ?)", (question, answer), commit=True)
-
-def get_random_quiz():
-    res = execute("SELECT id, question, answer FROM quiz ORDER BY RANDOM() LIMIT 1", fetch=True)
-    return res[0] if res else None
-
-# Schedule
+# ---------- Schedule ----------
 def init_schedule_table():
     execute("""
         CREATE TABLE IF NOT EXISTS schedule (
@@ -96,9 +60,35 @@ def add_schedule(title, description, date):
 def get_schedules():
     return execute("SELECT id, title, description, date FROM schedule", fetch=True)
 
-# Init all tables
+# ---------- Riot OAuth ----------
+def init_riot_table():
+    execute("""
+        CREATE TABLE IF NOT EXISTS riot_users (
+            discord_id TEXT PRIMARY KEY,
+            summoner_name TEXT,
+            access_token TEXT,
+            refresh_token TEXT,
+            token_expiry TIMESTAMP
+        )
+    """, commit=True)
+
+def add_or_update_riot_user(discord_id, summoner_name, access_token, refresh_token, token_expiry):
+    execute("""
+        INSERT INTO riot_users(discord_id, summoner_name, access_token, refresh_token, token_expiry)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(discord_id) DO UPDATE SET
+            summoner_name=excluded.summoner_name,
+            access_token=excluded.access_token,
+            refresh_token=excluded.refresh_token,
+            token_expiry=excluded.token_expiry
+    """, (discord_id, summoner_name, access_token, refresh_token, token_expiry), commit=True)
+
+def get_riot_user(discord_id):
+    res = execute("SELECT summoner_name, access_token, refresh_token, token_expiry FROM riot_users WHERE discord_id=?", (discord_id,), fetch=True)
+    return res[0] if res else None
+
+# ---------- Init All ----------
 def init_db():
     init_support_table()
-    init_points_table()
-    init_quiz_table()
     init_schedule_table()
+    init_riot_table()
