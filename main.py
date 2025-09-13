@@ -51,7 +51,7 @@ COGS = [
     "takkari_bot.cogs.schedule",
     "takkari_bot.cogs.patchnote",
     "takkari_bot.cogs.loglookup",
-    "takkari_bot.cogs.db_lookup",
+    "takkari_bot.cogs.dblookup",
     "takkari_bot.cogs.riot",
     "takkari_bot.cogs.help"
 ]
