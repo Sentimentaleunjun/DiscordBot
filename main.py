@@ -110,6 +110,15 @@ async def on_ready():
     if not rotate_presence.is_running():
         rotate_presence.start()
 
+@bot.event
+async def setup_hook():
+    await load_cogs()
+    GUILD_ID = 1415669855390007370
+    guild = discord.Object(id=GUILD_ID)
+    synced = await bot.tree.sync(guild=guild)
+    print(f"⚡ 길드 동기화 완료: {len(synced)}개")
+
+
 
 @bot.event
 async def on_app_command_error(interaction, error):
