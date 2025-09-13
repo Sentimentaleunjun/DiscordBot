@@ -27,16 +27,13 @@ app = Flask("takkari_bot")
 
 @app.route("/")
 def index():
-    return "Main Server is Running! (this is beta version . GSEJ"
+    return "Main Server is Running! (beta version GSEJ)"
 
 PORT = int(os.environ.get("PORT", 10000))
 
 def run_flask():
     logger.info("Flask 서버 시작 (포트 %s)", PORT)
     app.run(host="0.0.0.0", port=PORT, debug=False, use_reloader=False)
-
-flask_thread = Thread(target=run_flask, daemon=True)
-flask_thread.start()
 
 # ---------- Discord Bot 설정 ----------
 intents = discord.Intents.default()
@@ -59,17 +56,17 @@ COGS = [
     "takkari_bot.cogs.help"
 ]
 
-# ---------- Cog 로드 (비동기) ----------
-async def load_cogs():
-    loaded = 0
-    for cog in COGS:
-        try:
-            await bot.load_extension(cog)
-            logger.info("✅ %s 로드 완료", cog)
-            loaded += 1
-        except Exception as e:
-            logger.exception("❌ %s 로드 실패: %s", cog, e)
-    logger.info("총 시도한 코그: %d, 성공: %d", len(COGS), loaded)
+# ---------- Cog 로드 ----------
+loaded = 0
+for cog in COGS:
+    try:
+        bot.load_extension(cog)
+        logger.info("✅ %s 로드 완료", cog)
+        loaded += 1
+    except Exception as e:
+        logger.exception("❌ %s 로드 실패: %s", cog, e)
+
+logger.info("총 시도한 코그: %d, 성공: %d", len(COGS), loaded)
 
 # ---------- Presence 순환 ----------
 PRESENCE_MESSAGES = [
@@ -93,7 +90,6 @@ async def rotate_presence():
 async def on_ready():
     logger.info("로그인 성공: %s (ID: %s)", bot.user, bot.user.id)
 
-    # 슬래시 커맨드 글로벌 동기화 (중복 방지)
     if not hasattr(bot, "synced") or not bot.synced:
         try:
             synced = await bot.tree.sync()
@@ -102,11 +98,9 @@ async def on_ready():
         except Exception as e:
             logger.exception("❌ 슬래시 명령어 동기화 실패: %s", e)
 
-    # 서버 수 출력
     guild_count = len(bot.guilds)
     logger.info("현재 접속 서버 수: %d", guild_count)
 
-    # Presence 시작
     if not rotate_presence.is_running():
         rotate_presence.start()
 
@@ -121,19 +115,23 @@ async def on_app_command_error(interaction, error):
     except Exception:
         logger.exception("에러 피드백 전송 중 예외")
 
-# ---------- 봇 시작 ----------
-def start_bot():
+# ---------- 봇 & Flask 동시 실행 ----------
+async def main():
+    # Flask 먼저 스레드로 실행
+    flask_thread = Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+
+    # Discord Bot 실행
     token = os.environ.get("DISCORD_BOT_TOKEN")
     if not token:
         logger.error("환경변수 DISCORD_BOT_TOKEN 미설정")
         sys.exit(1)
 
-    async def runner():
-        await load_cogs()  # COG 비동기 로드
-        logger.info("봇 시작 시도")
-        await bot.start(token)
-
-    asyncio.run(runner())
+    logger.info("봇 시작 시도")
+    await bot.start(token)
 
 if __name__ == "__main__":
-    start_bot()
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("종료됨")
