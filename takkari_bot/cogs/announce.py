@@ -6,6 +6,9 @@ class Announce(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def cog_load(self):
+        self.bot.tree.add_command(self.announce)
+
     @app_commands.command(name="announce", description="공지 메시지를 전송합니다. (관리자만 사용 가능)")
     @app_commands.checks.has_permissions(administrator=True)
     async def announce(self, interaction: discord.Interaction, channel: discord.TextChannel, *, message: str):
