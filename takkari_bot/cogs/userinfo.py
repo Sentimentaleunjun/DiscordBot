@@ -6,8 +6,6 @@ from discord import app_commands
 class UserInfo(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-    def cog_load(self):
-        self.bot.tree.add_command(self.userinfo)
 
     @app_commands.command(name="userinfo", description="유저 정보를 확인합니다.")
     async def userinfo(self, interaction: discord.Interaction, user: discord.Member = None):
