@@ -7,22 +7,17 @@ from threading import Thread
 import discord
 from discord.ext import commands, tasks
 from flask import Flask
-
-# 프로젝트 내부 유틸
 from takkari_bot.utils import db, logging_config
 
-# ---------- 로깅 설정 ----------
 logger = logging_config.setup_logging()
 logger.info("로그 시작")
 
-# ---------- DB 초기화 ----------
 try:
     db.init_db()
     logger.info("✅ DB 초기화 완료")
 except Exception as e:
     logger.exception("❌ DB 초기화 실패: %s", e)
 
-# ---------- Flask ----------
 app = Flask("takkari_bot")
 
 @app.route("/")
@@ -38,28 +33,27 @@ def run_flask():
 flask_thread = Thread(target=run_flask, daemon=True)
 flask_thread.start()
 
-# ---------- Discord Bot 설정 ----------
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
 intents.members = True
 
-bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+bot = commands.Bot(command_prefix="/", intents=intents, help_command=None)
 
-# ---------- COG 목록 ----------
+
 COGS = [
     "takkari_bot.cogs.userinfo",
     "takkari_bot.cogs.accordingtobot",
     "takkari_bot.cogs.support",
     "takkari_bot.cogs.schedule",
-    "takkari_bot.cogs.addschedule",
+    "takkari_bot.cogs.riot",
     "takkari_bot.cogs.patchnote",
     "takkari_bot.cogs.loglookup",
     "takkari_bot.cogs.db_lookup",
+    "takkari_bot.cogs.updown",
     "takkari_bot.cogs.help"
 ]
 
-# ---------- Cog 로드 ----------
 async def load_cogs():
     loaded = 0
     for cog in COGS:
@@ -71,9 +65,8 @@ async def load_cogs():
             logger.exception("❌ %s 로드 실패: %s", cog, e)
     logger.info("총 시도한 코그: %d, 성공: %d", len(COGS), loaded)
 
-# ---------- Presence ----------
 PRESENCE_MESSAGES = [
-    "🔥 {guild_count}개의 서버 관리중",
+    "🔥 {guild_count}개의 서버 관리",
     "🚀 업데이트 준비",
     "🤖 AI로 코딩"
 ]
@@ -90,16 +83,13 @@ async def rotate_presence():
     except Exception:
         logger.exception("Presence 순환 중 오류 발생")
 
-# ---------- 이벤트 ----------
 @bot.event
 async def on_ready():
     logger.info("로그인 성공: %s (ID: %s)", bot.user, bot.user.id)
     print(f"로그인 성공: {bot.user} (ID: {bot.user.id})")
 
-    # Cog 로드
     await load_cogs()
 
-    # 슬래시 커맨드 글로벌 동기화
     try:
         synced = await bot.tree.sync()
         logger.info("🌐 슬래시 명령어 동기화 완료: %d개", len(synced))
@@ -107,7 +97,7 @@ async def on_ready():
     except Exception as e:
         logger.exception("❌ 슬래시 명령어 동기화 실패: %s", e)
 
-    # Presence 시작
+
     if not rotate_presence.is_running():
         rotate_presence.start()
         logger.info("Presence 순환 스타트")
@@ -123,7 +113,7 @@ async def on_app_command_error(interaction, error):
     except Exception:
         logger.exception("에러 피드백 전송 중 예외")
 
-# ---------- 시작 ----------
+
 def start_bot():
     token = os.environ.get("DISCORD_BOT_TOKEN")
     if not token:
