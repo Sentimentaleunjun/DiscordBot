@@ -8,12 +8,6 @@ DEVELOPER_ID = 909360134566862878
 class Support(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-    def cog_load(self):
-        self.bot.tree.add_command(self.support)
-    def cog_load(self):
-        self.bot.tree.add_command(self.supportclose)
-    def cog_load(self):
-        self.bot.tree.add_command(self.supportlist)
 
     @app_commands.command(name="support", description="문의/피드백을 등록합니다.")
     async def support(self, interaction: discord.Interaction, message: str):
