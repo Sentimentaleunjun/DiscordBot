@@ -92,9 +92,6 @@ async def on_ready():
     logger.info("로그인 성공: %s (ID: %s)", bot.user, bot.user.id)
 
     try:
-        # 슬래시 명령어 강제 재스캔 후 동기화
-        bot.tree.clear_commands(guild=None)  
-        await bot.tree.sync()
         logger.info("🌐 슬래시 명령어 동기화 완료: %d개", len(bot.tree.get_commands()))
     except Exception as e:
         logger.exception("❌ 슬래시 명령어 동기화 실패: %s", e)
