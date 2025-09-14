@@ -53,6 +53,7 @@ COGS = [
     "takkari_bot.cogs.loglookup",
     "takkari_bot.cogs.dblookup",
     "takkari_bot.cogs.riot",
+    "takkari_bot.cogs.dm_feature",
     "takkari_bot.cogs.help"
 ]
 
