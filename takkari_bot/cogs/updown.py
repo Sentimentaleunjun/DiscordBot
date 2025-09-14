@@ -10,7 +10,7 @@ class UpDown(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="updown_start", description="업다운 게임 시작 (1~100 숫자 맞추기)")
+    @app_commands.command(name="updown_start", description="업다운 게임 시작 📌 (1~100 숫자 맞추기)")
     async def start_game(self, interaction: discord.Interaction):
         user_id = interaction.user.id
         if user_id in user_games:
@@ -21,7 +21,7 @@ class UpDown(commands.Cog):
         user_games[user_id] = number
         await interaction.response.send_message("🎮 업다운 게임 시작! 1~100 사이 숫자를 맞춰보세요. `/updown_guess <숫자>`", ephemeral=True)
 
-    @app_commands.command(name="updown_guess", description="숫자를 추측합니다")
+    @app_commands.command(name="updown_guess", description="숫자를 추측합니다 💥")
     @app_commands.describe(guess="1~100 사이 숫자를 입력하세요")
     async def guess_number(self, interaction: discord.Interaction, guess: int):
         user_id = interaction.user.id
