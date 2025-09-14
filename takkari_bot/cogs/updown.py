@@ -14,7 +14,7 @@ class UpDown(commands.Cog):
     async def start_game(self, interaction: discord.Interaction):
         user_id = interaction.user.id
         if user_id in user_games:
-            await interaction.response.send_message("⚠️ 이미 게임 중입니다!", ephemeral=True)
+            await interaction.response.send_message("TKR 002 오류. 이미 게임중 입니다.", ephemeral=True)
             return
 
         number = random.randint(1, 100)
@@ -26,7 +26,7 @@ class UpDown(commands.Cog):
     async def guess_number(self, interaction: discord.Interaction, guess: int):
         user_id = interaction.user.id
         if user_id not in user_games:
-            await interaction.response.send_message("⚠️ 먼저 `/updown_start`로 게임을 시작하세요.", ephemeral=True)
+            await interaction.response.send_message("TKR 003 오류 , 먼저 `/updown_start`로 게임을 시작하세요.", ephemeral=True)
             return
 
         target = user_games[user_id]
