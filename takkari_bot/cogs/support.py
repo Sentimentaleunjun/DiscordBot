@@ -9,7 +9,7 @@ class Support(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="support", description="문의/피드백을 등록합니다.")
+    @app_commands.command(name="support", description="문의/피드백을 등록합니다 📌)
     async def support(self, interaction: discord.Interaction, message: str):
         db.add_support(str(interaction.user.id), message)
         await interaction.response.send_message("✅ 문의가 등록되었습니다!", ephemeral=True)
@@ -17,7 +17,7 @@ class Support(commands.Cog):
         if dev:
             await dev.send(f"📨 새로운 문의\n{interaction.user} : {message}")
 
-    @app_commands.command(name="supportlist", description="등록된 문의 목록 확인 (개발자 전용)")
+    @app_commands.command(name="supportlist", description="피드백을 확인합니다 📌")
     async def supportlist(self, interaction: discord.Interaction):
         if interaction.user.id != DEVELOPER_ID:
             await interaction.response.send_message("❌ 개발자 전용입니다.", ephemeral=True)
@@ -37,7 +37,7 @@ class Support(commands.Cog):
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.command(name="supportclose", description="문의 닫기 (개발자 전용)")
+    @app_commands.command(name="supportclose", description="문의를 닫습니다 📌")
     async def supportclose(self, interaction: discord.Interaction, support_id: int):
         if interaction.user.id != DEVELOPER_ID:
             await interaction.response.send_message("❌ 개발자 전용입니다.", ephemeral=True)
