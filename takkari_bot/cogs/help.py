@@ -9,14 +9,14 @@ HELP_PAGES = [
         "color": discord.Color.blue(),
         "commands": [
             ("/userinfo", "유저 정보를 확인합니다."),
-            ("/announce", "서버 공지를 관리합니다.")
+            ("/announce", "원하는 채널에 공지를 봇을 통해 등록합니다.")
         ]
     },
     {
         "title": "🛠️ 지원 / 일정",
         "color": discord.Color.green(),
         "commands": [
-            ("/support", "봇 지원 요청을 보냅니다."),
+            ("/support", "봇 고객지원 요청을 보냅니다."),
             ("/schedule", "일정을 추가/조회합니다.")
         ]
     },
@@ -24,17 +24,17 @@ HELP_PAGES = [
         "title": "🎮 게임 / 로그",
         "color": discord.Color.blurple(),
         "commands": [
-            ("/riot", "라이엇 관련 기능 사용"),
-            ("/loglookup", "서버 로그 조회"),
-            ("/dblookup", "DB 조회")
+            ("/riot", "라이엇 관련 기능을 사용합니다"),
+            ("/loglookup", "서버 로그를 조회합니다"),
+            ("/dblookup", "DB를 조회합니다")
         ]
     },
     {
         "title": "✉️ DM / 헬프",
         "color": discord.Color.light_grey(),
         "commands": [
-            ("/dm", "봇을 통해 DM 보내기"),
-            ("/help", "이 도움말 보기")
+            ("/dm", "봇을 통해 서버의 어느 사람에게 DM을 전송합니다"),
+            ("/help", "이 도움말을 봅니다")
         ]
     }
 ]
