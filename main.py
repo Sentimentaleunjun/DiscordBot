@@ -53,7 +53,7 @@ COGS = [
     "takkari_bot.cogs.loglookup",
     "takkari_bot.cogs.dblookup",
     "takkari_bot.cogs.riot",
-    "takkari_bot.cogs.dm_feature",
+    "takkari_bot.cogs.dm_feature",  # DM 전송 관련 코그
     "takkari_bot.cogs.help"
 ]
 
@@ -88,6 +88,37 @@ async def rotate_presence():
     except Exception:
         logger.exception("Presence 순환 중 오류 발생")
 
+# ---------- 서버 입장 시 개발자용 안내 DM ----------
+@bot.event
+async def on_guild_join(guild: discord.Guild):
+    owner = guild.owner
+    if owner is None:
+        return
+    try:
+        dm_channel = owner.dm_channel
+        if dm_channel is None:
+            dm_channel = await owner.create_dm()
+
+        from discord.ui import View, Button
+        view = View()
+        guide_button = Button(
+            label="🔥사용가이드", 
+            url="https://gsej-company.onrender.com/takkari-bot.html"
+        )
+        view.add_item(guide_button)
+
+        embed = discord.Embed(
+            title="👋 따까리봇 개발자용 안내",
+            description="안녕하세요! 서버에 봇을 추가해주셔서 감사합니다!\n아래 버튼을 눌러 개발자용 사용가이드를 확인하세요.",
+            color=discord.Color.blue()
+        )
+
+        await dm_channel.send(embed=embed, view=view)
+        logger.info(f"✅ {guild.name} 서버 소유자에게 개발자용 안내 DM 전송 완료")
+    except Exception as e:
+        logger.exception(f"❌ {guild.name} 서버 소유자 DM 전송 실패: {e}")
+
+# ---------- 이벤트 ----------
 @bot.event
 async def on_ready():
     logger.info("로그인 성공: %s (ID: %s)", bot.user, bot.user.id)
@@ -105,7 +136,7 @@ async def on_ready():
 @bot.event
 async def setup_hook():
     await load_cogs()
-    synced = await bot.tree.sync()  # ✅ 특정 길드 제거 → 글로벌 동기화만
+    synced = await bot.tree.sync()  # 글로벌 동기화
     logger.info("🌐 글로벌 동기화 완료: %d개", len(synced))
 
 @bot.event
