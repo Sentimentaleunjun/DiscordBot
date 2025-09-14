@@ -61,19 +61,13 @@ async def load_cogs():
     loaded = 0
     for cog in COGS:
         try:
-            await bot.load_extension(cog)  # ✅ await 추가
+            await bot.load_extension(cog)  # ✅ await 필수
             logger.info("✅ %s 로드 완료", cog)
             loaded += 1
         except Exception as e:
             logger.exception("❌ %s 로드 실패: %s", cog, e)
 
     logger.info("총 시도한 코그: %d, 성공: %d", len(COGS), loaded)
-
-@bot.event
-async def setup_hook():
-    # setup_hook 안에서 cog 로딩 실행
-    await load_cogs()
-
 
 # ---------- Presence 순환 ----------
 PRESENCE_MESSAGES = [
@@ -93,32 +87,14 @@ async def rotate_presence():
     except Exception:
         logger.exception("Presence 순환 중 오류 발생")
 
+# ---------- Discord 이벤트 ----------
 @bot.event
 async def on_ready():
     logger.info("로그인 성공: %s (ID: %s)", bot.user, bot.user.id)
-
-    try:
-        # 슬래시 명령어 강제 재스캔 후 동기화
-        bot.tree.clear_commands(guild=None)  
-        await bot.tree.sync()
-        logger.info("🌐 슬래시 명령어 동기화 완료: %d개", len(bot.tree.get_commands()))
-    except Exception as e:
-        logger.exception("❌ 슬래시 명령어 동기화 실패: %s", e)
-
     logger.info("현재 접속 서버 수: %d", len(bot.guilds))
 
     if not rotate_presence.is_running():
         rotate_presence.start()
-
-@bot.event
-async def setup_hook():
-    await load_cogs()
-    GUILD_ID = 1415669855390007370
-    guild = discord.Object(id=GUILD_ID)
-    synced = await bot.tree.sync(guild=guild)
-    print(f"⚡ 길드 동기화 완료: {len(synced)}개")
-
-
 
 @bot.event
 async def on_app_command_error(interaction, error):
@@ -130,6 +106,25 @@ async def on_app_command_error(interaction, error):
             await interaction.response.send_message("⚠️ 명령어 처리 중 오류가 발생했습니다.", ephemeral=True)
     except Exception:
         logger.exception("에러 피드백 전송 중 예외")
+
+# ---------- setup_hook (Cog 로드 + 동기화) ----------
+@bot.event
+async def setup_hook():
+    await load_cogs()
+
+    try:
+        # ⚡ 길드 동기화 (빠른 반영용)
+        GUILD_ID = 1415669855390007370
+        guild = discord.Object(id=GUILD_ID)
+        synced = await bot.tree.sync(guild=guild)
+        logger.info("⚡ 길드 동기화 완료: %d개", len(synced))
+
+        # 🌐 글로벌 동기화 (시간 걸리지만 전체 반영)
+        synced_global = await bot.tree.sync()
+        logger.info("🌐 글로벌 동기화 완료: %d개", len(synced_global))
+
+    except Exception as e:
+        logger.exception("❌ 슬래시 명령어 동기화 실패: %s", e)
 
 # ---------- 봇 & Flask 동시 실행 ----------
 async def main():
