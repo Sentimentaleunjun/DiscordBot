@@ -20,7 +20,7 @@ class LogLookup(commands.Cog):
                     found.append(f"[{msg.author.display_name}] {content}")
         except Exception as e:
             await interaction.response.send_message(
-                f"⚠️ 로그 접근 중 오류가 발생했습니다: {type(e).__name__}", ephemeral=True
+                f"TKR 004 오류 , 로그 접근 중 오류가 발생했습니다: {type(e).__name__}", ephemeral=True
             )
             return
 
