@@ -7,7 +7,7 @@ class RiotOAuth(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="login_riot", description="라이엇 계정으로 로그인")
+    @app_commands.command(name="login_riot", description="라이엇 계정으로 로그인 💘")
     async def login_riot(self, interaction: discord.Interaction):
         client_id = os.environ.get("RIOT_CLIENT_ID")
         redirect_uri = os.environ.get("RIOT_REDIRECT_URI")
