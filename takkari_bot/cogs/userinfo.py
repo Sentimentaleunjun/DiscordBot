@@ -7,7 +7,7 @@ class UserInfo(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @app_commands.command(name="userinfo", description="유저 정보를 확인합니다.")
+    @app_commands.command(name="userinfo", description="유저 정보를 확인합니다 💗")
     async def userinfo(self, interaction: discord.Interaction, user: discord.Member = None):
         user = user or interaction.user
         embed = discord.Embed(title="유저 정보", color=discord.Color.blue())
