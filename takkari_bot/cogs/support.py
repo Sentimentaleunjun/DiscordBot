@@ -9,7 +9,7 @@ class Support(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="support", description="문의/피드백을 등록합니다 📌)
+    @app_commands.command(name="support", description="문의/피드백을 등록합니다 📌")
     async def support(self, interaction: discord.Interaction, message: str):
         db.add_support(str(interaction.user.id), message)
         await interaction.response.send_message("✅ 문의가 등록되었습니다!", ephemeral=True)
