@@ -6,7 +6,7 @@ class Announce(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="announce", description="공지 메시지를 전송합니다. (관리자만 사용 가능)")
+    @app_commands.command(name="announce", description="원하는 채널에 공지를 전송합니다 💘")
     @app_commands.checks.has_permissions(administrator=True)
     async def announce(self, interaction: discord.Interaction, channel: discord.TextChannel, *, message: str):
         embed = discord.Embed(title="📢 공지", description=message, color=discord.Color.gold())
