@@ -6,9 +6,8 @@ class DMFeature(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="dm")
+     @app_commands.command(name="dm", description="서버의 어느 사람에게 Dm를 보냅니다 💘")
     async def send_dm(self, ctx, user: discord.User, *, message: str):
-        """모든 유저가 사용 가능, 보낸 사람 이름 표시"""
         try:
             sender_tag = f"{ctx.author.name}#{ctx.author.discriminator}"
             await user.send(f"📨 {sender_tag} 님이 보낸 메시지:\n{message}")
