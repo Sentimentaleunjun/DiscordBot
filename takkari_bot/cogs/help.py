@@ -4,24 +4,22 @@ from discord import app_commands
 from discord.ext import commands
 
 class HelpCog(commands.Cog):
-    """귀여운 슬래시 명령어 헬프 코그"""
 
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="help", description="따까리봇의 소개! ✨")
+    @app_commands.command(name="help", description="💘따까리봇의 소개! ✨")
     async def help(self, interaction: discord.Interaction):
         embed = discord.Embed(
             title="🤖 따까리봇 소개 및 사용가이드",
             description=(
                 "여러분의 잡일 해결사! 🛠\n"
                 "More convinent , Safer!✨\n"
-                "오류나 개선 사항이 있다면 eunddiseundd#0 DM , Support으로 알려주세요! 💌"
+                "오류나 개선 사항이 있다면 `eunddiseundd#0 DM` , `Support`으로 알려주세요! 💌"
             ),
             color=0xC3073F
         )
 
-        # 카테고리별 명령어
         embed.add_field(
             name="📅 스케줄",
             value="/addschedule → 서버 전체 일정 등록 (관리자 전용)\n/schedule → 일정 확인",
@@ -50,7 +48,7 @@ class HelpCog(commands.Cog):
 
         embed.set_footer(text="Edited with KBC💖 by Flow in GSEJ")
 
-        # Ephemeral 메시지로 보내서 오직 호출한 사람만 보이게
+        # Ephemeral
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
