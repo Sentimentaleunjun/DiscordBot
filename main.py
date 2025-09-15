@@ -9,7 +9,7 @@ import sqlite3
 
 # -----------------------------
 # 환경변수
-TOKEN = os.environ.get("DISCORD_TOKEN")
+TOKEN = os.environ.get("DISCORD_BOT_TOKEN")
 LOG_CHANNEL_ID = 1417052732019310652
 PORT = 10000
 DB_PATH = "db.sqlite"
