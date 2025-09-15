@@ -114,12 +114,32 @@ async def load_cogs():
         except Exception as e:
             logger.exception(f"❌ {cog} 로드 실패: {e}")
 
+
+
 # -----------------------------
 # 봇 이벤트
 @bot.event
 async def on_ready():
     logger.info(f"봇 시작 완료: {bot.user}")
 
+    async def status_task():
+        while True:
+            try:
+                guild_count = len(bot.guilds)  # 서버 수
+                member_count = sum(g.member_count for g in bot.guilds)  # 중복 포함 전체 인원
+                statuses = [
+                    discord.Game(f"{guild_count}개의 서버에서 활동중 ✨"),
+                    discord.Game(f"{member_count}명의 유저와 함께 👥"),
+                    discord.Game("따까리봇 업데이트 진행중"),
+                ]
+                for status in statuses:
+                    await bot.change_presence(status=discord.Status.online, activity=status)
+                    await asyncio.sleep(10)  # 10초마다 변경
+            except Exception as e:
+                logger.error(f"Presence 업데이트 중 오류: {e}")
+                await asyncio.sleep(10)
+
+    bot.loop.create_task(status_task())
 # -----------------------------
 # 메인 실행
 async def main():
