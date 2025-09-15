@@ -28,21 +28,17 @@ def run_flask():
     app.run(host="0.0.0.0", port=PORT)
 
 # -----------------------------
-# Discord 로그 핸들러
+# Discord Bot 로그 핸들러
 class DiscordLogHandler(logging.Handler):
     def __init__(self, bot, channel_id):
         super().__init__()
         self.bot = bot
         self.channel_id = channel_id
         self.queue = asyncio.Queue()
-        # bot이 준비된 후 로그 워커 실행
-        asyncio.create_task(self.start_worker())
-
-    async def start_worker(self):
-        await self.bot.wait_until_ready()
-        asyncio.create_task(self.log_worker())
+        self.worker_started = False
 
     async def log_worker(self):
+        await self.bot.wait_until_ready()
         channel = self.bot.get_channel(self.channel_id)
         while True:
             log_entry = await self.queue.get()
@@ -54,22 +50,25 @@ class DiscordLogHandler(logging.Handler):
 
     def emit(self, record):
         log_entry = self.format(record)
-        self.queue.put_nowait(log_entry)
+        try:
+            self.queue.put_nowait(log_entry)
+        except Exception as e:
+            print("Queue put error:", e)
 
-# -----------------------------
-# 로깅 설정
-logger = logging.getLogger('takkari_bot')
-logger.setLevel(logging.INFO)
-formatter = logging.Formatter('[%(levelname)s] %(message)s')
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
 
 # -----------------------------
 # Bot 초기화
 intents = discord.Intents.default()
 intents.members = True
-bot = commands.Bot(command_prefix="/", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+
+# setup_hook에서 worker 등록
+@bot.event
+async def setup_hook():
+    if not hasattr(bot, "log_worker_started"):
+        bot.log_worker_started = True
+        handler_task = bot.loop.create_task(discord_handler.log_worker())
 
 # Discord 로그 채널 핸들러 연결
 discord_handler = DiscordLogHandler(bot, LOG_CHANNEL_ID)
