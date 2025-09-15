@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import asyncio
 import logging
-from flask import Flask
+from flask import Flask, request
 import threading
 import os
 import sqlite3
@@ -15,12 +15,37 @@ PORT = 10000
 DB_PATH = "db.sqlite"
 
 # -----------------------------
+# 로깅 설정
+logger = logging.getLogger("takkari")
+logger.setLevel(logging.INFO)
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s"))
+logger.addHandler(console_handler)
+
+# -----------------------------
 # Flask 서버
 app = Flask(__name__)
 
 @app.route("/")
 def home():
     return "Takkari Bot Server is running!"
+
+# Riot OAuth Callback
+@app.route("/riot/callback")
+def riot_callback():
+    code = request.args.get("code")
+    if not code:
+        return "❌ Riot OAuth 실패: code 없음", 400
+
+    # DB 저장
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO riot_codes (code) VALUES (?)", (code,))
+    conn.commit()
+    conn.close()
+
+    logger.info(f"✅ Riot OAuth code 수신: {code}")
+    return "✅ Riot 로그인 성공! 이제 디스코드에서 확인하세요 🎉"
 
 def run_flask():
     logger.info(f"Flask 서버 시작 (포트 {PORT})")
@@ -54,18 +79,6 @@ class DiscordLogHandler(logging.Handler):
         except Exception as e:
             print("Queue put error:", e)
 
-
-# -----------------------------
-# 로깅 설정 (✅ 이 부분 추가!)
-logger = logging.getLogger("takkari_bot")
-logger.setLevel(logging.INFO)
-
-formatter = logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s")
-
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
-
 # -----------------------------
 # Bot 초기화
 intents = discord.Intents.default()
@@ -77,10 +90,11 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 async def setup_hook():
     if not hasattr(bot, "log_worker_started"):
         bot.log_worker_started = True
-        bot.loop.create_task(discord_handler.log_worker())
+        handler_task = bot.loop.create_task(discord_handler.log_worker())
 
 # Discord 로그 채널 핸들러 연결
 discord_handler = DiscordLogHandler(bot, LOG_CHANNEL_ID)
+formatter = logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s")
 discord_handler.setFormatter(formatter)
 logger.addHandler(discord_handler)
 
@@ -93,6 +107,12 @@ def init_db():
     CREATE TABLE IF NOT EXISTS users(
         id INTEGER PRIMARY KEY,
         name TEXT
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS riot_codes(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT NOT NULL
     )
     """)
     conn.commit()
@@ -131,16 +151,16 @@ async def on_ready():
     async def status_task():
         while True:
             try:
-                guild_count = len(bot.guilds)  # 서버 수
-                member_count = sum(g.member_count for g in bot.guilds)  # 전체 인원 (중복 포함)
+                guild_count = len(bot.guilds)
+                member_count = sum(g.member_count for g in bot.guilds)
                 statuses = [
                     discord.Game(f"{guild_count}개의 서버에서 활동중 ✨"),
                     discord.Game(f"{member_count}명의 유저와 함께 👥"),
-                    discord.Game("따까리봇 업데이트 진행중🔥"),
+                    discord.Game("따까리봇 업데이트 진행중"),
                 ]
                 for status in statuses:
                     await bot.change_presence(status=discord.Status.online, activity=status)
-                    await asyncio.sleep(10)  # 10초마다 변경
+                    await asyncio.sleep(10)
             except Exception as e:
                 logger.error(f"Presence 업데이트 중 오류: {e}")
                 await asyncio.sleep(10)
