@@ -1,28 +1,50 @@
+# takkari_bot/cogs/patchnote_auto.py
 import discord
-from discord.ext import commands
-from discord import app_commands
+from discord.ext import commands, tasks
+import aiohttp
+import asyncio
 
-class PatchNote(commands.Cog):
+PATCHNOTE_CHANNEL_ID = 1417051773318991913  # 업데이트-로그 채널
+GITHUB_REPO = "sentimentaleunjun/DiscordBot"  # 깃허브 리포지토리
+GITHUB_API_URL = f"https://api.github.com/sentimentaleunjun/DiscordBot/commits"
+GITHUB_TOKEN = "ghp_YourTokenHere"  # 필요하면 개인 토큰
+
+class PatchnoteAuto(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.notes = [
-            "🎉 따까리봇 1.0.13",
-            "📅 출시일: 2025-09-10",
-            "🛠 버그 수정 및 안정성 강화",
-            "⚡ 에러 핸들링 강화 및 UI/UX 개선",
-            "🔧 코그 구조 최적화 및 통합",
-            "💖 사용자 편의성 향상: 명령어 반응 개선 및 피드백 반영"
-        ]
+        self.last_commit_sha = None
+        self.check_commits.start()
 
-    @app_commands.command(name="patchnote", description="따까리봇 패치노트를 확인합니다 📌")
-    async def patchnote(self, interaction: discord.Interaction):
-        embed = discord.Embed(
-            title="📢패치노트",
-            description="\n".join(self.notes),
-            color=discord.Color.purple()
-        )
-        embed.set_footer(text="Edited by Flow in GSEJ 💖")
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+    @tasks.loop(minutes=5)
+    async def check_commits(self):
+        headers = {"Authorization": f"token {GITHUB_TOKEN}"} if GITHUB_TOKEN else {}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(GITHUB_API_URL, headers=headers) as resp:
+                if resp.status != 200:
+                    return
+                data = await resp.json()
+                latest_commit = data[0]
+                sha = latest_commit['sha']
+                if sha == self.last_commit_sha:
+                    return
+                self.last_commit_sha = sha
+
+                embed = discord.Embed(
+                    title="🆕 새 패치노트!",
+                    description=latest_commit['commit']['message'],
+                    color=0x00ff00,
+                    url=latest_commit['html_url']
+                )
+                embed.set_author(name=latest_commit['commit']['author']['name'])
+                embed.set_footer(text="패치노트 자동 업데이트")
+
+                channel = self.bot.get_channel(PATCHNOTE_CHANNEL_ID)
+                if channel:
+                    await channel.send(embed=embed)
+
+    @check_commits.before_loop
+    async def before_check(self):
+        await self.bot.wait_until_ready()
 
 async def setup(bot):
-    await bot.add_cog(PatchNote(bot))
+    await bot.add_cog(PatchnoteAuto(bot))
