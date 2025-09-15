@@ -6,7 +6,7 @@ from threading import Thread
 
 import discord
 from discord.ext import commands, tasks
-from flask import Flask
+from flask import Flask, request, jsonify
 
 # 프로젝트 내부 유틸
 from takkari_bot.utils import db, logging_config
@@ -29,6 +29,13 @@ app = Flask("takkari_bot")
 def index():
     return "Main Server is Running! (beta version GSEJ)"
 
+# ---------- Riot Callback ----------
+@app.route("/riot/callback", methods=["POST"])
+def riot_callback():
+    data = request.json
+    logger.info("Riot Callback 수신: %s", data)
+    return jsonify({"status": "ok"}), 200
+
 PORT = int(os.environ.get("PORT", 10000))
 
 def run_flask():
@@ -43,6 +50,31 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="/", intents=intents, help_command=None)
 
+# ---------- Discord 로그 핸들러 ----------
+class DiscordLogHandler(logging.Handler):
+    def __init__(self, bot, channel_id):
+        super().__init__()
+        self.bot = bot
+        self.channel_id = channel_id
+
+    def emit(self, record):
+        log_entry = self.format(record)
+        self.bot.loop.create_task(self.send_log(log_entry))
+
+    async def send_log(self, log_entry):
+        channel = self.bot.get_channel(self.channel_id)
+        if channel:
+            if len(log_entry) > 1900:
+                log_entry = log_entry[:1900] + "..."
+            await channel.send(f"```{log_entry}```")
+
+LOG_CHANNEL_ID = 1417052732019310652
+discord_handler = DiscordLogHandler(bot, LOG_CHANNEL_ID)
+discord_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('[%(levelname)s] %(asctime)s | %(message)s')
+discord_handler.setFormatter(formatter)
+logger.addHandler(discord_handler)
+
 # ---------- COG 목록 ----------
 COGS = [
     "takkari_bot.cogs.userinfo",
@@ -53,7 +85,7 @@ COGS = [
     "takkari_bot.cogs.loglookup",
     "takkari_bot.cogs.dblookup",
     "takkari_bot.cogs.riot",
-    "takkari_bot.cogs.dm_feature",  # DM 전송 관련 코그
+    "takkari_bot.cogs.dm_feature",
     "takkari_bot.cogs.help"
 ]
 
@@ -62,7 +94,7 @@ async def load_cogs():
     loaded = 0
     for cog in COGS:
         try:
-            await bot.load_extension(cog)  # ✅ await 추가
+            await bot.load_extension(cog)
             logger.info("✅ %s 로드 완료", cog)
             loaded += 1
         except Exception as e:
@@ -88,57 +120,23 @@ async def rotate_presence():
     except Exception:
         logger.exception("Presence 순환 중 오류 발생")
 
-# ---------- 서버 입장 시 개발자용 안내 DM ----------
-@bot.event
-async def on_guild_join(guild: discord.Guild):
-    owner = guild.owner
-    if owner is None:
-        return
-    try:
-        dm_channel = owner.dm_channel
-        if dm_channel is None:
-            dm_channel = await owner.create_dm()
-
-        from discord.ui import View, Button
-        view = View()
-        guide_button = Button(
-            label="🔥사용가이드", 
-            url="https://gsej-company.onrender.com/takkari-bot.html"
-        )
-        view.add_item(guide_button)
-
-        embed = discord.Embed(
-            title="👋 따까리봇 개발자용 안내",
-            description="안녕하세요! 서버에 봇을 추가해주셔서 감사합니다!\n아래 버튼을 눌러 개발자용 사용가이드를 확인하세요.",
-            color=discord.Color.blue()
-        )
-
-        await dm_channel.send(embed=embed, view=view)
-        logger.info(f"✅ {guild.name} 서버 소유자에게 개발자용 안내 DM 전송 완료")
-    except Exception as e:
-        logger.exception(f"❌ {guild.name} 서버 소유자 DM 전송 실패: {e}")
-
 # ---------- 이벤트 ----------
 @bot.event
 async def on_ready():
     logger.info("로그인 성공: %s (ID: %s)", bot.user, bot.user.id)
-
-    try:
-        logger.info("🌐 슬래시 명령어 동기화 완료: %d개", len(bot.tree.get_commands()))
-    except Exception as e:
-        logger.exception("❌ 슬래시 명령어 동기화 실패: %s", e)
-
     logger.info("현재 접속 서버 수: %d", len(bot.guilds))
 
     if not rotate_presence.is_running():
         rotate_presence.start()
 
-@bot.event
-async def setup_hook():
-    await load_cogs()
-    synced = await bot.tree.sync()  # 글로벌 동기화
-    logger.info("🌐 글로벌 동기화 완료: %d개", len(synced))
+    # 글로벌 슬래시 명령어 동기화
+    try:
+        synced = await bot.tree.sync()
+        logger.info("🌐 글로벌 동기화 완료: %d개", len(synced))
+    except Exception as e:
+        logger.exception("❌ 슬래시 명령어 동기화 실패: %s", e)
 
+# ---------- 앱 커맨드 에러 ----------
 @bot.event
 async def on_app_command_error(interaction, error):
     logger.exception("앱 커맨드 실행 중 예외: %s", error)
@@ -152,16 +150,15 @@ async def on_app_command_error(interaction, error):
 
 # ---------- 봇 & Flask 동시 실행 ----------
 async def main():
-    # Flask 먼저 스레드로 실행
     flask_thread = Thread(target=run_flask, daemon=True)
     flask_thread.start()
 
-    # Discord Bot 실행
     token = os.environ.get("DISCORD_BOT_TOKEN")
     if not token:
         logger.error("환경변수 DISCORD_BOT_TOKEN 미설정")
         sys.exit(1)
 
+    await load_cogs()
     logger.info("봇 시작 시도")
     await bot.start(token)
 
