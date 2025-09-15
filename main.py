@@ -69,7 +69,7 @@ logger.addHandler(console_handler)
 # Bot 초기화
 intents = discord.Intents.default()
 intents.members = True
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="/", intents=intents)
 
 # Discord 로그 채널 핸들러 연결
 discord_handler = DiscordLogHandler(bot, LOG_CHANNEL_ID)
@@ -101,8 +101,10 @@ async def load_cogs():
         "takkari_bot.cogs.support",
         "takkari_bot.cogs.help",
         "takkari_bot.cogs.patchnote",
-        "takkari_bot.cogs.db_lookup",
-        "takkari_bot.cogs.",
+        "takkari_bot.cogs.dblookup",
+        "takkari_bot.cogs.updown",
+        "takkari_bot.cogs.schedule",
+        "takkari_bot.cogs.loglookup",
         "takkari_bot.cogs.riot"
     ]
     for cog in cogs:
