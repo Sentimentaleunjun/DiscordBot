@@ -1,19 +1,19 @@
 # main.py
 import discord
 from discord.ext import commands
-from discord import app_commands
 import asyncio
 import logging
 from flask import Flask
 import threading
 import os
+import sqlite3
 
 # -----------------------------
 # 환경변수
 TOKEN = os.environ.get("DISCORD_TOKEN")
 LOG_CHANNEL_ID = 1417052732019310652
 PORT = 10000
-DB_PATH = "db.sqlite"  # DB 파일 경로
+DB_PATH = "db.sqlite"
 
 # -----------------------------
 # Flask 서버
@@ -28,22 +28,27 @@ def run_flask():
     app.run(host="0.0.0.0", port=PORT)
 
 # -----------------------------
-# Discord Bot 로그 핸들러
+# Discord 로그 핸들러
 class DiscordLogHandler(logging.Handler):
     def __init__(self, bot, channel_id):
         super().__init__()
         self.bot = bot
         self.channel_id = channel_id
         self.queue = asyncio.Queue()
+        # bot이 준비된 후 로그 워커 실행
+        asyncio.create_task(self.start_worker())
+
+    async def start_worker(self):
+        await self.bot.wait_until_ready()
         asyncio.create_task(self.log_worker())
 
     async def log_worker(self):
-        await self.bot.wait_until_ready()
         channel = self.bot.get_channel(self.channel_id)
         while True:
             log_entry = await self.queue.get()
             try:
-                await channel.send(f"```{log_entry}```")
+                if channel:
+                    await channel.send(f"```{log_entry}```")
             except Exception as e:
                 print("Log send error:", e)
 
@@ -66,7 +71,7 @@ intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# 디스코드 로그 채널 핸들러 연결
+# Discord 로그 채널 핸들러 연결
 discord_handler = DiscordLogHandler(bot, LOG_CHANNEL_ID)
 discord_handler.setFormatter(formatter)
 logger.addHandler(discord_handler)
@@ -74,10 +79,8 @@ logger.addHandler(discord_handler)
 # -----------------------------
 # DB 초기화
 def init_db():
-    import sqlite3
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    # DB 테이블 예시
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users(
         id INTEGER PRIMARY KEY,
@@ -96,8 +99,11 @@ async def load_cogs():
         "takkari_bot.cogs.announce",
         "takkari_bot.cogs.dm_feature",
         "takkari_bot.cogs.support",
-        # 추가 코그 넣기
-        "takkari_bot.cogs.riot_callback"
+        "takkari_bot.cogs.help",
+        "takkari_bot.cogs.patchnote",
+        "takkari_bot.cogs.db_lookup",
+        "takkari_bot.cogs.",
+        "takkari_bot.cogs.riot"
     ]
     for cog in cogs:
         try:
@@ -115,16 +121,9 @@ async def on_ready():
 # -----------------------------
 # 메인 실행
 async def main():
-    # DB 초기화
     init_db()
-
-    # 코그 로드
     await load_cogs()
-
-    # Flask 서버를 스레드로 실행
     threading.Thread(target=run_flask, daemon=True).start()
-
-    # 봇 시작
     await bot.start(TOKEN)
 
 if __name__ == "__main__":
