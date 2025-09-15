@@ -1,4 +1,3 @@
-# main.py
 import discord
 from discord.ext import commands
 import asyncio
@@ -57,18 +56,28 @@ class DiscordLogHandler(logging.Handler):
 
 
 # -----------------------------
+# 로깅 설정 (✅ 이 부분 추가!)
+logger = logging.getLogger("takkari_bot")
+logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s")
+
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+
+# -----------------------------
 # Bot 초기화
 intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix="/", intents=intents)
-
 
 # setup_hook에서 worker 등록
 @bot.event
 async def setup_hook():
     if not hasattr(bot, "log_worker_started"):
         bot.log_worker_started = True
-        handler_task = bot.loop.create_task(discord_handler.log_worker())
+        bot.loop.create_task(discord_handler.log_worker())
 
 # Discord 로그 채널 핸들러 연결
 discord_handler = DiscordLogHandler(bot, LOG_CHANNEL_ID)
@@ -113,8 +122,6 @@ async def load_cogs():
         except Exception as e:
             logger.exception(f"❌ {cog} 로드 실패: {e}")
 
-
-
 # -----------------------------
 # 봇 이벤트
 @bot.event
@@ -125,11 +132,11 @@ async def on_ready():
         while True:
             try:
                 guild_count = len(bot.guilds)  # 서버 수
-                member_count = sum(g.member_count for g in bot.guilds)  # 중복 포함 전체 인원
+                member_count = sum(g.member_count for g in bot.guilds)  # 전체 인원 (중복 포함)
                 statuses = [
                     discord.Game(f"{guild_count}개의 서버에서 활동중 ✨"),
                     discord.Game(f"{member_count}명의 유저와 함께 👥"),
-                    discord.Game("따까리봇 업데이트 진행중"),
+                    discord.Game("따까리봇 업데이트 진행중🔥"),
                 ]
                 for status in statuses:
                     await bot.change_presence(status=discord.Status.online, activity=status)
@@ -139,6 +146,7 @@ async def on_ready():
                 await asyncio.sleep(10)
 
     bot.loop.create_task(status_task())
+
 # -----------------------------
 # 메인 실행
 async def main():
