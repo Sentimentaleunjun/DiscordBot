@@ -18,6 +18,7 @@ def execute(sql, params=(), fetch=False, commit=False):
             conn.close()
         return result
 
+# -----------------------------
 # Support
 def init_support_table():
     execute("""
@@ -42,6 +43,7 @@ def close_support(support_id):
         return True
     return False
 
+# -----------------------------
 # Schedule
 def init_schedule_table():
     execute("""
@@ -59,7 +61,36 @@ def add_schedule(title, description, date):
 def get_schedules():
     return execute("SELECT id, title, description, date FROM schedule", fetch=True)
 
+# -----------------------------
+# PatchNote
+def init_patchnote_table():
+    execute("""
+        CREATE TABLE IF NOT EXISTS patchnotes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            author_id TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """, commit=True)
+
+def add_patchnote(title, content, author_id):
+    execute(
+        "INSERT INTO patchnotes (title, content, author_id) VALUES (?, ?, ?)",
+        (title, content, author_id),
+        commit=True
+    )
+
+def get_patchnotes(limit=5):
+    return execute(
+        "SELECT id, title, content, author_id, created_at FROM patchnotes ORDER BY created_at DESC LIMIT ?",
+        (limit,),
+        fetch=True
+    )
+
+# -----------------------------
 # Init all tables
 def init_db():
     init_support_table()
     init_schedule_table()
+    init_patchnote_table()
