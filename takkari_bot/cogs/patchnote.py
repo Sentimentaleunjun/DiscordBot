@@ -1,57 +1,67 @@
+# takkari_bot/cogs/patchnote.py
 import discord
 from discord.ext import commands
-import sqlite3
-import os
+from discord import app_commands
+import datetime
+import db  # 아까 만든 db.py
 
-PATCH_CHANNEL_ID = 1417426181942153237
-ADMIN_ROLE_IDS = [1416769282380922991, 1416769872284876931]
-DB_PATH = "db.sqlite"
+# 운영진/제작자 역할 ID
+ADMIN_ROLES = [1416769282380922991, 1416769872284876931]
+PATCHNOTE_CHANNEL_ID = 1417426181942153237
 
-class PatchNoteCog(commands.Cog):
+class PatchNote(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def is_admin(self, member):
-        return any(role.id in ADMIN_ROLE_IDS for role in member.roles)
-
-    @commands.command(name="addpatch")
-    async def add_patch(self, ctx, title: str, *, content: str):
-        """운영진 전용 패치노트 등록"""
-        if not self.is_admin(ctx.author):
-            await ctx.send("❌ 이 명령어를 사용할 권한이 없습니다.")
+    # -----------------------------
+    # 패치노트 등록
+    @app_commands.command(name="add_patchnote", description="운영진/제작자 전용 패치노트 등록")
+    @app_commands.describe(title="제목", content="내용")
+    async def add_patchnote(self, interaction: discord.Interaction, title: str, content: str):
+        # 권한 확인
+        if not any(role.id in ADMIN_ROLES for role in interaction.user.roles):
+            await interaction.response.send_message("❌ 당신은 패치노트를 등록할 권한이 없습니다.", ephemeral=True)
             return
 
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO patchnotes (title, content, author_id) VALUES (?, ?, ?)",
-            (title, content, ctx.author.id)
+        # DB에 저장
+        db.add_patchnote(title, content, str(interaction.user.id))
+
+        # 채널에 자동 업로드
+        channel = self.bot.get_channel(PATCHNOTE_CHANNEL_ID)
+        if channel:
+            embed = discord.Embed(
+                title=f"📝 {title}",
+                description=content,
+                color=discord.Color.blurple(),
+                timestamp=datetime.datetime.utcnow()
+            )
+            embed.set_footer(text=f"등록자: {interaction.user}", icon_url=interaction.user.display_avatar.url)
+            await channel.send(embed=embed)
+
+        await interaction.response.send_message("✅ 패치노트 등록 완료!", ephemeral=True)
+
+    # -----------------------------
+    # 패치노트 확인
+    @app_commands.command(name="patchnote", description="최근 패치노트 확인")
+    async def patchnote(self, interaction: discord.Interaction):
+        notes = db.get_patchnotes(5)  # 최근 5개
+        if not notes:
+            await interaction.response.send_message("❌ 등록된 패치노트가 없습니다.", ephemeral=True)
+            return
+
+        embed = discord.Embed(
+            title="📜 최근 패치노트",
+            color=discord.Color.green(),
+            timestamp=datetime.datetime.utcnow()
         )
-        conn.commit()
-        conn.close()
+        for note in notes:
+            embed.add_field(
+                name=f"{note[1]} ({note[4]})",  # title + created_at
+                value=note[2],  # content
+                inline=False
+            )
 
-        embed = discord.Embed(title=title, description=content, color=discord.Color.green())
-        await self.bot.get_channel(PATCH_CHANNEL_ID).send(embed=embed)
-        await ctx.send("✅ 패치노트 등록 완료!")
-
-    @commands.command(name="patches")
-    async def view_patches(self, ctx):
-        """모든 유저가 볼 수 있는 패치노트 조회"""
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("SELECT title, content, created_at FROM patchnotes ORDER BY created_at DESC LIMIT 5")
-        rows = cursor.fetchall()
-        conn.close()
-
-        if not rows:
-            await ctx.send("등록된 패치노트가 없습니다.")
-            return
-
-        embed = discord.Embed(title="최근 패치노트", color=discord.Color.blue())
-        for title, content, created_at in rows:
-            embed.add_field(name=title, value=f"{content}\n🕒 {created_at}", inline=False)
-
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(bot):
-    await bot.add_cog(PatchNoteCog(bot))
+    await bot.add_cog(PatchNote(bot))
