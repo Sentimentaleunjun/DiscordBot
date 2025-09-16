@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import datetime
-import db  # 아까 만든 db.py
+from takkari_bot.utils import db
 
 # 운영진/제작자 역할 ID
 ADMIN_ROLES = [1416769282380922991, 1416769872284876931]
