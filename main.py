@@ -154,9 +154,9 @@ async def on_ready():
                 guild_count = len(bot.guilds)
                 member_count = sum(g.member_count for g in bot.guilds)
                 statuses = [
-                    discord.Game(f"{guild_count}개의 서버에서 활동중 ✨"),
+                    discord.Game(f"{guild_count}개의 서버에서 활동 ✨"),
                     discord.Game(f"{member_count}명의 유저와 함께 👥"),
-                    discord.Game("따까리봇 업데이트 진행중"),
+                    discord.Game("🔥 따까리봇 업데이트 진행"),
                 ]
                 for status in statuses:
                     await bot.change_presence(status=discord.Status.online, activity=status)
