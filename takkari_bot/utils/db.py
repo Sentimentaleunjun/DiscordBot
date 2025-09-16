@@ -1,7 +1,9 @@
+# takkari_bot/utils/db.py
 import sqlite3
 import threading
+import os
 
-DB_PATH = "shared/user.db"
+DB_PATH = os.path.join(os.path.dirname(__file__), "../../shared/user.db")
 _lock = threading.Lock()
 
 def execute(sql, params=(), fetch=False, commit=False):
@@ -19,7 +21,7 @@ def execute(sql, params=(), fetch=False, commit=False):
         return result
 
 # -----------------------------
-# Support
+# Support 테이블
 def init_support_table():
     execute("""
         CREATE TABLE IF NOT EXISTS support (
@@ -44,7 +46,7 @@ def close_support(support_id):
     return False
 
 # -----------------------------
-# Schedule
+# Schedule 테이블
 def init_schedule_table():
     execute("""
         CREATE TABLE IF NOT EXISTS schedule (
@@ -62,10 +64,10 @@ def get_schedules():
     return execute("SELECT id, title, description, date FROM schedule", fetch=True)
 
 # -----------------------------
-# PatchNote
+# Patchnote 테이블
 def init_patchnote_table():
     execute("""
-        CREATE TABLE IF NOT EXISTS patchnotes (
+        CREATE TABLE IF NOT EXISTS patchnote (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             content TEXT NOT NULL,
@@ -75,21 +77,13 @@ def init_patchnote_table():
     """, commit=True)
 
 def add_patchnote(title, content, author_id):
-    execute(
-        "INSERT INTO patchnotes (title, content, author_id) VALUES (?, ?, ?)",
-        (title, content, author_id),
-        commit=True
-    )
+    execute("INSERT INTO patchnote (title, content, author_id) VALUES (?, ?, ?)", (title, content, author_id), commit=True)
 
-def get_patchnotes(limit=5):
-    return execute(
-        "SELECT id, title, content, author_id, created_at FROM patchnotes ORDER BY created_at DESC LIMIT ?",
-        (limit,),
-        fetch=True
-    )
+def get_patchnotes():
+    return execute("SELECT id, title, content, author_id, created_at FROM patchnote ORDER BY created_at DESC", fetch=True)
 
 # -----------------------------
-# Init all tables
+# 모든 테이블 초기화
 def init_db():
     init_support_table()
     init_schedule_table()
