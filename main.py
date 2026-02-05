@@ -30,22 +30,12 @@ app = Flask(__name__)
 def home():
     return "Takkari Bot Server is running!"
 
-# Riot OAuth Callback
-@app.route("/riot/callback")
-def riot_callback():
-    code = request.args.get("code")
-    if not code:
-        return "❌ Riot OAuth 실패: code 없음", 400
-
     # DB 저장
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("INSERT INTO riot_codes (code) VALUES (?)", (code,))
     conn.commit()
     conn.close()
-
-    logger.info(f"✅ Riot OAuth code 수신: {code}")
-    return "✅ Riot 로그인 성공! 이제 디스코드에서 확인하세요 🎉"
 
 def run_flask():
     logger.info(f"Flask 서버 시작 (포트 {PORT})")
